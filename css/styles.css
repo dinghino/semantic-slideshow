@@ -1,0 +1,73 @@
+body {
+  background-image: -webkit-gradient(
+    radial, 
+    50% 50%, 0, 
+    50% 50%, 1000, 
+    from(rgba(255,245,245,1)),
+    to(rgba(125,125,125,1))
+  );
+}
+
+.wrap {
+  position: absolute;
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden; /* because children will be floated */
+}
+
+[data-role="helpIcon"] {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  margin: 10px!important;
+}
+
+[data-role="counter"] {
+  position: fixed!important;
+  bottom: 0;
+  left: 40px;
+  margin: 7px!important;
+  margin-bottom: 11px!important;
+  /*text-align: left;*/
+  min-width: 100px;
+}
+
+[data-role="slides"] {
+  width: 999999px;
+}
+
+[data-role="slides"] > div {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  float: left;
+  margin-right: 200px;
+  /*text-align: center;*/
+  -webkit-transition: -webkit-transform 0.5s ease-in-out;
+  transition: -webkit-transform 0.5s ease-in-out;
+
+  /* Flexible Box Model */
+  display: -webkit-box;
+  -webkit-box-align: center;
+  -webkit-box-orient: horizontal;
+  -webkit-box-pack: center;
+
+  display: box;
+  box-align: center;
+  box-orient: horizontal;
+  box-pack: center;
+}
+
+[data-role="buttons"] {
+  position: fixed;
+  bottom: 0;
+  right: 45px;
+  margin: 10px!important;
+}
+
+[data-role="toggle"] {
+  position: fixed;
+  bottom: 1px;
+  right: 0;
+  margin: 10px!important;
+}
