@@ -550,10 +550,18 @@ var Slides = {
 
     // update DOM
     if (prev) {
-      prev.transition(transition.leave)
+      prev.transition({
+        animation: transition.leave,
+        // handle the event listeners
+        onStart: Interface.disableTransitions
+      })
     }
     if (next) {
-      next.transition(transition.enter)
+      next.transition({
+        animation: transition.enter,
+        // handle the event listeners
+        onComplete: Interface.restoreTransitions
+      })
     }
 
     Slides.config.showCounter ? Counter.set() : null
@@ -613,13 +621,14 @@ var Interface = {
 
   addEventListeners: function () {
     // click events for slides buttons
-    $button.first.on('click', function () { App.go('first') });
-    $button.prev.on('click', function () { App.go('prev') });
-    $button.next.on('click', function () { App.go('next') });
-    $button.last.on('click', function () { App.go('last') });
-    $button.black.on('click', function () { App.dim() });
+    Interface.addNavigationListeners();
+
     // event for the toggler button
     $button.toggle.on('click', Interface.toggle);
+
+    // event for the black screen button
+    $button.black.on('click', function () { App.dim() });
+    // event handler for the dimmer click
     $dimmer.on('click', function () { App.dim() })
 
     // custom events
@@ -627,6 +636,15 @@ var Interface = {
     $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
  
+  /** add functionality to the navigational buttons */
+  addNavigationListeners: function () {
+    $button.first.on('click', function () { App.go('first') });
+    $button.prev.on('click', function () { App.go('prev') });
+    $button.next.on('click', function () { App.go('next') });
+    $button.last.on('click', function () { App.go('last') });
+  },
+
+  /** validate a keyCode from a keypress to handle navigation */
   validateKeyPress: function (key) {
     /**
      * keycode shortcuts * legend
@@ -648,11 +666,11 @@ var Interface = {
     return ''
   },
 
+  /** handle a keypress in the page, when listeners are active */
   handleKeyPress: function(e) {
-
     var key = Interface.validateKeyPress(e.keyCode);
 
-    // if one of those is pressed decide what direction to go
+    // if one of those is pressed decide what to do
     switch (key) {
       case 'left':
         e.preventDefault();
@@ -688,21 +706,26 @@ var Interface = {
         App.dim()
 
       default:
-        throw new Error('Unexpected movement triggered. please do something!')
+        break
     }
   },
 
   /** instantiate event listeners on key press */
   addKeyPressEvents: function () {
-    $(document.body).keydown(Interface.handleKeyPress);
+    $(document).keydown(Interface.handleKeyPress);
   },
 
   disableTransitions: function () {
-    // TODO: disable transitions listeners
-    document.body.removeEventListener('keypress', Interface.handleKeyPress)
+    $(document).unbind('keydown', Interface.handleKeyPress)
+    
+    $button.first.off('click');
+    $button.prev.off('click');
+    $button.next.off('click');
+    $button.last.off('click');
   },
   restoreTransitions: function () {
-    // TODO: re enable transition listeners
+    Interface.addKeyPressEvents()
+    Interface.addNavigationListeners()
   },
 
   /** event triggers */
