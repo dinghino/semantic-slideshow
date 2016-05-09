@@ -10,8 +10,7 @@
       $btn.on('click', function (e) {
         e.preventDefault();
 
-        var totalSlides = $('input[name="totalSlides"]').val(),
-            folder      = $('input[name="folderName"]').val(),
+        var folder      = $('input[name="folderName"]').val(),
             hash        = $('input[name="pageHash"]').val(),
             counter     = $('input[name="counterToggle"]').is(':checked'),
             controls    = $('input[name="controlsToggle"]').is(':checked');
@@ -24,7 +23,7 @@
           showCounter: counter
         }
 
-        console.info('loading', totalSlides, 'slides from "' + config.folder + '/"')
-        App.loadSlideshow(totalSlides, config);
+        // console.info('loading', totalSlides, 'slides from "' + config.folder + '/"')
+        App.loadSlideshow(config);
       });
     });

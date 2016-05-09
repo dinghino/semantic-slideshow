@@ -14,7 +14,9 @@ body {
   width: 100%;
   overflow: hidden; /* because children will be floated */
 }
-
+[data-role="dimmer"] {
+  background: rgba(0, 0, 0, 1)!important;
+}
 [data-role="helpIcon"] {
   position: fixed;
   bottom: 0;
@@ -28,8 +30,14 @@ body {
   left: 40px;
   margin: 7px!important;
   margin-bottom: 11px!important;
-  /*text-align: left;*/
   min-width: 100px;
+}
+
+[data-role="toggle"] {
+  position: fixed;
+  bottom: 1px;
+  right: 0;
+  margin: 10px!important;
 }
 
 [data-role="slides"] {
@@ -44,7 +52,7 @@ body {
   margin-right: 200px;
   /*text-align: center;*/
   -webkit-transition: -webkit-transform 0.5s ease-in-out;
-  transition: -webkit-transform 0.5s ease-in-out;
+  transition: transform 0.5s ease-in-out;
 
   /* Flexible Box Model */
   display: -webkit-box;
@@ -52,7 +60,7 @@ body {
   -webkit-box-orient: horizontal;
   -webkit-box-pack: center;
 
-  display: box;
+  display: box!important;
   box-align: center;
   box-orient: horizontal;
   box-pack: center;
@@ -62,12 +70,5 @@ body {
   position: fixed;
   bottom: 0;
   right: 45px;
-  margin: 10px!important;
-}
-
-[data-role="toggle"] {
-  position: fixed;
-  bottom: 1px;
-  right: 0;
   margin: 10px!important;
 }

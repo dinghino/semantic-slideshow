@@ -9,34 +9,27 @@
     <link href="css/styles.css" rel="stylesheet">
   </head>
   <body>
+      <div data-role="dimmer" class="ui dimmer"></div>
     <div data-role="wrap">
       <div data-role="slides">
         <!-- slides go here -->
         <div class="">
-          <div class="ui form tall piled segment" style="width: 33%">
+          <div class="ui form tall piled segment" style="width: 320px">
             <div class="ui basic segment">
               <h3 class="ui blue header">
                 <i class="circular blue inverted info icon"></i>
               <div class="content">
                 <div class="header">Find your slideshow</div>
-                <div class="sub header">folder and number of slides</div>
+                <div class="sub header">set folder and number of slides</div>
               </div>
               </h3>
             </div>
-
             <div class="ui basic segment">
               <div class="field">
                 <div class="ui left icon right labeled input">
                   <i class="folder icon"></i>
                   <input type="text" name="folderName" placeholder="folder name" value="slideshow">
                   <div class="ui blue inverted label">folder</div>
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui left icon right labeled input">
-                  <i class="file text icon"></i>
-                  <input type="text" name="totalSlides" placeholder="number of slides" value="2">
-                  <div class="ui blue inverted label">slides</div>
                 </div>
               </div>
               <div class="field">
@@ -69,10 +62,9 @@
                 Load slideshow
               </div>
             </div>
-          </div>
-        </div>
+          </div> <!-- close segments -->
       </div>
-    </div>
+    </div> <!-- close wrap -->
     <!-- help icon and popup are here -->
     <button data-role="helpIcon" class="ui basic compact active icon button">
       <i class="help link icon"></i>

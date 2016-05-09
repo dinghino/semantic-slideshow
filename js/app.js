@@ -3,6 +3,7 @@ var $helpIcon = $('[data-role="helpIcon"]'),
     $counter = $('[data-role="counter"]'),
     $authorAccordion = $('[data-role="authorAccordion"]'),
     $slideContainer = $('[data-role="slides"]');
+    $dimmer = $('[data-role="dimmer"]')
 var $button = {
   // wrapper for slide movement buttons
   wrapper: $('[data-role="buttons"]'),
@@ -30,7 +31,7 @@ var App = {
     author: 'Daniele Calcinai',
     email: 'dinghino@gmail.com',
     gitHub: 'https://github.com/dinghino',
-    version: '0.8a'
+    version: '0.9.1RC'
   },
   // current state of the app
   state : {
@@ -39,10 +40,12 @@ var App = {
     /** @property {boolean} app initialization status */
     initialized: false,
     /** @property {boolean} true if custom events are present and ready */
-    events: false
+    events: false,
+    /** @property {string} status of the dimmer. uses semantic dimmer options */
+    dimmer: 'hide'
   },
-
-  init: function (totalSlides, config, info) {
+  __logState: function () { console.log( App.state )},
+  init: function (config, info) {
     /** EVENT LISTENERS */
     // listen to window resize to handle slide dimensions and translation
     App.addWindowListeners()
@@ -58,64 +61,62 @@ var App = {
     App.semanticModules()
     // initialize the buttons and their events
     Interface.init()
-
-    // FINALIZE INITIALIZATION
-    // $(App).trigger('initDone')
   },
 
   events: function () {
     $(App)
-    
     .on('setConfig', function (e, config) {
       // assigning configuration to app
       Slides.config = Object.assign(Slides.config, config)
     })
-
-    .on('loadSlides', function (e, totalSlides, config) {
+    .on('loadSlides', function (e, config) {
       // initializing slideshow
       App.updateConfig(config)
-      Slides.init(totalSlides)
+      Slides.init()
     })
-
     .on('slideShowReady', function (e) {
       // if custom events are present in config and not yet executed run that
       // first before finalizing initialization
       if(Slides.config.events && !App.state.events) {
         Slides.config.debug ? console.info('enabling your custom events') : null
-        $(App).trigger('setSlidesEvents')
+        App.enableEvents()
         return
-      // if no extra events are presents or are already set, trigger initDone
+      // if no extra events are presents or are already set, finalize init
       } else {
         Slides.config.debug ? console.info('finalizing initialization') : null
-        $(App).trigger('initDone')
+        App.finalizeApp()
       };
     })
-
-    .on('initDone', function (e) {
+    .on('finalizeAppInit', function (e) {
       // if app is already initialized warn the user
       if (App.state.initialized === true) {
         console.warn('initialization called more than once. check it!')
         return
       }
 
-      App.state.initialized = true
       Slides.config.debug ? console.info('I\'m done! Slideshow is ready'): null
       
+
+      // set initial state for the buttons
+      // if necessary do stuff to the UI
+      if (Slides.config.showCounter && !App.state.initialized) Counter.init();
+      if (Slides.config.showButtons && !App.state.initialized) {
+        setTimeout(Interface.toggle, 250);
+      };
+
+      // remove the dimmer
+      setTimeout(function () { App.dim('hide')}, 150)
+
       // call the onEnter event for the first slide after loading
       Slides.onEnter(Slides.currentSlide)
+      App.state.initialized = true
     })
-
-    .on('updateSlideSize', function (e) {
-      // call the rendering of the app
-      Slides.handleResize()
-    })
-
+    .on('renderSlides', Slides.render)
     .on('moveTo', function (e, nextPosition) {
       // move to a direction
       Slides.onGo(nextPosition)
       Interface.toggleButtons()
     })
-
     .on('enableCustomEvents', function (e) {
       Slides.config.events = window._slidesEvents
       var events = Slides.config.events
@@ -128,41 +129,61 @@ var App = {
       // run init validation again
       App.slidesReady()
     })
+    .on('dimSlides', function (e, status) {
+      var state = App.state.dimmer,
+          states = ['show', 'hide'];
+
+      if (status) {
+        $dimmer.dimmer(status)
+        App.state.dimmer = status
+        return
+      }
+      $dimmer.dimmer('toggle')
+      App.state.dimmed = state === 'show' ? 'hide' : 'show'
+    })
   },
 
   /**
    * event triggers
    */
   /** load a slideshow with the given total slides and configuration */
-  loadSlideshow: function (totalSlides, config) {
-    $(App).trigger('loadSlides', [totalSlides, config])
+  loadSlideshow: function (config) {
+    // trigger the loading of the slideshows
+    $(App).trigger('loadSlides', [config])
   },
   /** update Slides.config object with custom config */
   updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
-  /** get the custom script file from the slideshow folder */
+  /** get the custom script file from the slideshow folder 
+   * @param  {string} fileName will be used in a later release,
+   *                           allowing custom names for script.js
+   */
   fetchEvents: function (fileName) {
     if (!fileName) fileName = 'script'
     var path = Slides.config.folder + '/' + fileName + '.js'
-    
-    console.log('trying to load', path) 
+
     $.getScript(path)
     .done(function (script, status) {
-      console.log('script found!', status)
+      console.info('script found!', status, 'activating.')
       App.enableEvents()
     })
     .fail(function (jqxhr, settings, exception) {
-      console.log('no extra script found', jqxhr.status)
+      console.warn(
+        'no extra script found in "' + Slides.config.folder + '/"', jqxhr.status
+      )
       App.slidesReady()
     });
   },
   /** enable custom events */
   enableEvents: function () { $(App).trigger('enableCustomEvents') },
+  /** finalize the initialization of the slides */
+  slidesReady: function () { $(App).trigger('slideShowReady') },
+  /** finalize initialization of the whole app */
+  finalizeApp: function () { $(App).trigger('finalizeAppInit') },
   /**  move the slides */
   go: function (direction) { $(App).trigger('moveTo', [direction]) },
-  /** finalize the initialization */
-  slidesReady: function () { $(App).trigger('slideShowReady') },
   /** rerender the slides and content, adjusting to window resize */
-  render: function () { $(App).trigger('updateSlideSize') },
+  render: function () { $(App).trigger('renderSlides') },
+  dim: function (status) { $(App).trigger('dimSlides', [status]) },
 
   /** get the about info and set them into the page */
   setAboutInfo: function () {
@@ -187,31 +208,38 @@ var App = {
     });
 
     $authorAccordion.accordion()
-    
+    $dimmer
+      .dimmer({
+        duration: {
+          show: 200,
+          hide: 200
+        }
+      })
   },
 
-  /**
-   *  instantiate event listener on key press
-   */
+  /** instantiate event listeners on key press */
   onKeyPress: function () {
     $(document.body).keydown(function(e) {
 
       var key = e.keyCode
+
       /**
-       * keycode shortcuts *
+       * keycode shortcuts * legend
        *
-       * right:  ->, SPACE, presenter right,
-       * left:   <-, presenter left,
-       * home:   HOME key,
-       * end:    END key,
-       * toggle: T key 
+       * right:     -> key, presenter right, SPACE
+       * left:      <- key, presenter left
+       * home:      HOME key
+       * end:       END key
+       * toggle:    T key 
+       * blackout:  keycode 190 for presenter | TODO: find a keyboard key
        */
 
       var right  = key === 39 || key === 34 || key === 32,
           left   = key === 37 || key === 33,
           home   = key === 36,
           end    = key === 35,
-          toggle = key === 84;
+          toggle = key === 84,
+          dim    = key === 190;
 
       // if one of those is pressed decide what direction to go
       if (left) {
@@ -221,40 +249,44 @@ var App = {
         return
       }
       if (right) {
-        e.preventDefault()
-        if (Slides.currentSlide === Slides.totalSlides) return;
+        e.preventDefault();
+        if (Slides.currentSlide === Slides.lastSlide) return;
         App.go('next')
         return
       }
       if (home) {
-        e.preventDefault()
+        e.preventDefault();
         if(Slides.currentSlide === 0) return
         App.go('first')
         return
       }
       if (end) {
-        e.preventDefault()
-        if(Slides.currentSlide === Slides.totalSlides) return
+        e.preventDefault();
+        if(Slides.currentSlide === Slides.lastSlide) return
         App.go('last')
         return
       }
       if (toggle) {
-        e.preventDefault()
-        Interface.toggle()
+        e.preventDefault();
+        Interface.toggle();
         return
+      }
+      if (dim) {
+        e.preventDefault()
+        App.dim()
       }
     });
   },
 
   /** add event listeners to document to handle events */
   addWindowListeners: function () {
-    window.addEventListener('resize', App.render)
-  },
-
+    // add event and attach render method as callback
+    window.addEventListener('resize', App.render);
+  }
 };
 
-
 /**
+ * TODO: rewrite description of this and ALL objects
  * Load, activate and manage the state and behaviour of the slides.
  * Starts calling init() and passing the number of slides as required argument.
  * init will load the slides from specified folder.
@@ -262,7 +294,7 @@ var App = {
  */
 var Slides = {
   // {number} the total ammount of slides of the project
-  totalSlides: 0,
+  lastSlide: 0,
 
   // {number} current slide shown
   currentSlide: 0,
@@ -298,57 +330,38 @@ var Slides = {
   },
 
   /**
-   * initialize the application
-   * @param {number}  totalSlides  the number of the slides to initialize
+   * initialize the slideshow
    */
-  init: function (totalSlides) {
-    // Throw an error if no slides number is passed
-    if (!totalSlides) throw new Error('Please pass the total number of slides')
-
+  init: function () {
     /** INITIALIZATION */
 
     // empty the slide container
-    Slides.container.empty()
+    App.dim('show')
+    App.state.initialized = false;
+    Slides.container.empty();
     
     Slides.windowWidth = 0;
     Slides.slideWidth = 0;
     
     /** START LOADING */
-    
-    // set the number of the total slides
-    Slides.totalSlides = (totalSlides - 1);
-
-    // if everything's ok load the content of the slides
-    Slides.loadContent(App.fetchEvents);
-    // set initial slide widths, applying left-margin to compensate
-    Slides.handleResize();
-    // set initial state for the buttons
-    Interface.toggleButtons();
+    Slides.getContent(App.fetchEvents)
 
     /** INITIAL EVENTS */
-
-    // if necessary do stuff to the UI
-    if (Slides.config.showCounter && !App.state.initialized) Counter.init();
-    if (Slides.config.showButtons && !App.state.initialized) Interface.toggle();
 
     //  listen to key press events
     !App.state.initialized ? App.onKeyPress() : null;
 
     // determine width of the canvas and set properties
-    var windowWidth = Slides.getWindowSize().width;
-    Slides.slideWidth = windowWidth;
-    Slides.windowWidth = windowWidth;
+    var width = Slides.getWindowWidth();
+    Slides.slideWidth = width;
+    Slides.windowWidth = width;
     
     Slides.updateHash();
 
-    Slides.config.debug 
-      ? console.info('Slideshow ready with ', Slides.totalSlides + 1, 'slides.')
-      : null
-
-    if(Slides.config.debug) {
+    if (Slides.config.debug) {
       console.info('--- Initial state ---');
       console.log('App current state', App.state)
-      console.info('total slides to show: ' + (Slides.totalSlides + 1));
+      console.info('total slides to show: ' + (Slides.lastSlide + 1));
       console.info('initial slide: ' + (Slides.currentSlide));
       console.info('initial window width: ' + Slides.windowWidth);
       console.info('initial slide width: ' + Slides.slideWidth);
@@ -357,67 +370,103 @@ var Slides = {
   },
 
   /** get the window dimensions */
-  getWindowSize: function () {
-    var $height = $(window).height()
-    var $width = $(window).width() 
+  getWindowWidth: function () {
+    var width = $(window).width() 
+    return width
+  },
 
-    return {
-      height: $height,
-      width: $width
-    }
+  _createSlide: function (idx)  {
+    var hash = Slides.config.hash;
+
+    return $('<div>', {
+      id: hash + idx,
+      // TODO: use semantic-ui transitions setting initial status
+      // class: idx > 0 ? 'transition hidden' : 'transition visible'
+    })[0]
+  },
+
+  getContent: function (callback) {
+    console.log('fetching slides')
+    // local config
+    var frag        = document.createDocumentFragment(),
+        hash        = Slides.config.hash,
+        slidesQty   = 0,
+        folder      = Slides.config.folder,
+        loadStatus  = 'OK',
+        i = 0,
+        bit;
+
+
+    /** handle the error from the ajax call in case it fails */
+    function handleError (e) {
+      if (e.status == 0) {
+        console.warn(' Check Your Network.');
+      } else if (e.status == 404) {
+        console.warn('Seems we loaded the last slide. You have', slidesQty, 'slides');
+      } else if (e.status == 500) {
+        console.warn('Internel Server Error.'); 
+      } else {
+        console.warn('Unknow Error.\n' + e.responseText);
+      }
+    };
+
+    // fetch function for ajax request with $.get()
+    function ajaxCall () {
+      if (loadStatus !== 'OK') return;
+      
+      var nextSlide = folder + '/' + slidesQty + '.html'; 
+      bit = Slides._createSlide(slidesQty)
+
+      $.get(nextSlide)
+      .fail(function (e) {
+        loadStatus = 'FAIL'
+        console.log('fail')
+
+        /** error handling */
+        handleError(e)
+
+        /**
+         * Since fail means that there are no more slides to load, 
+         * append everything into the dom and continue configuring the slideshow
+         */
+        
+        /** save slide quantity in Slides.lastSlide */
+        Slides.lastSlide = --slidesQty
+
+        // append the fragments to the DOM into this.config.container
+        Slides.container.append(frag)
+
+        // debug stuff
+        Slides.config.debug ? console.info('All slides loaded. continuing') : null
+        
+        // set initial slide widths, applying left-margin to compensate
+        setTimeout(App.render, 50);
+
+        // execute callback function. Should be Slides.config.events
+        if (callback) setTimeout(callback, 50);
+      })
+      .success(function(data, status, xhr) {
+        console.log('success')
+        /** success callback */
+        $(bit).append($(data)[0]);
+
+        frag.appendChild(bit);
+
+        if (status === 'error') loadStatus = status
+        ++slidesQty
+        ajaxCall()
+      })
+    };
+
+    /** execute the slides fetching */
+    ajaxCall()
   },
 
   /**
-   * load the content of the slides into the page.
-   * Slides must be named as [n].html and be inside the folder specified
-   * in config object (default is 'slides/')
+   * set the margins of the slide, moving them in the correct position
+   * @param {[type]} width [description]
    */
-  loadContent: function (callback) {
-    // DOM fragments. Will be al the slides content
-    var frag = document.createDocumentFragment(),
-        totalSlides = Slides.totalSlides,
-        folder = Slides.config.folder,
-    // piece of fragment, will contain one <div> for each slide
-        bit;
-    
-    for (var i = 0; i < (totalSlides + 1); i++) {
-      bit = $('<div id=' + Slides.config.hash + i + '"></div>') 
-        .load(
-          (folder + '/' + i + '.html'),
-          function (response, status, xhr) { 
-            if (status === 'error') {
-              console.log('error in retrieving slide', i, 'from', folder)
-            }
-          }
-        )[0];
-
-      frag.appendChild(bit);
-    } // end for cycle
-
-    // append the fragments to the DOM into this.config.container
-    Slides.container.append(frag)
-    Slides.config.debug ? console.info('All slides loaded. continuing') : null
-    // execute callback function.
-    // should be Slides.config.events
-    if (callback) setTimeout(callback, 50);
-     
-  },
-
-  /** set the width of the slides, adding margin to accomodate all the slides */
-  handleResize: function () {
-    var width = Slides.getWindowSize().width
-    
-    // {boolean} true if window has been resized
-    var widthChanged = !(width === Slides.windowWidth) 
-
-    // if width didn't change do nothing
-    if (!widthChanged) return;
-    Slides.config.debug ? console.warn('Window width changed. handling') : null
-
-    // assign width to Slides properties
-    Slides.windowWidth = width
-    Slides.slideWidth = width
-
+  _setMargins: function () {
     /** @var {array} all the slides */
     var slides = Slides.container.children()
     
@@ -428,29 +477,47 @@ var Slides = {
 
       slide.css('margin-left', margin)
     }
+  },
 
-    /** reset transition width to accomodate new window width */
+  _handleResize: function (width) {
+    Slides.config.debug ? console.warn('Window width changed. handling') : null
+
+    /** store the new width into Slides properties */
+    Slides.slideWidth = width;
+    Slides.windowWidth = width;
+
+    Slides._setMargins()
+
+    /** if needed reset transition width to accomodate new window width */
     if (Slides.currentSlide > 0) {
-      var elements = Slides.container.children(),
-          transition = elements.css('transition');
-
-      // remove transition animation
-      // elements.css('transition', '-webkit-transform 0s linear')
-      // elements.css('-webkit-transition', '-webkit-transform 0s linear')
-
-      Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
-      Slides.animate()
-      
-      // re apply previous transition effects
-      // elements.css('transition', transition)
-      // elements.css('-webkit-transition', transition)
+      var width   = Slides.slideWidth,
+          current = Slides.currentSlide;
+      /** update the translateAmount for the transition */
+      Slides.translateAmount = -(width * current)
     }
+  },
+
+  /** render and animate the slides, updating values if necessary */
+  render: function () {
+    /** @type {number} current window width */
+    var width  = Slides.getWindowWidth(),
+    /** @type {bool} true if window changed size */
+        resize = Slides.windowWidth !== width;
+
+    /** if app is still initializing set initial margins */
+    if (!App.state.initialized) Slides._setMargins();
+
+    // if (App.state.initialized && !resize) return;
+    if (resize) Slides._handleResize(width);
+
+    /** execute the animation for the slides */
+    setTimeout(Slides.animate, 0)
   },
 
   debugger: function (nextSlide) {
     console.log('------ DEBUGGER ------')
     console.log('App current state', App.state)
-    console.log('total slides: ' + (this.totalSlides + 1))
+    console.log('total slides: ' + (this.lastSlide + 1))
     console.log('going to slide # ' + nextSlide)
     console.log('window width: ' + this.windowWidth)
     console.log('slide width: ' + this.slideWidth)
@@ -467,11 +534,14 @@ var Slides = {
    *                 one of 'next', 'prev', 'first', 'last'
    */
   onGo: function (direction) {
+    /** local variables */
     var nextSlide,
         currentSlide = Slides.currentSlide
 
-    // update object properties depending on where we are going.
-    // if case is no match throw an error
+    /**
+     * update object properties depending on where we are going.
+     * if case is no match throw an error | shouldn't happen from UI
+     */
     switch (direction) {
       case 'next':
         Slides.onLeave(currentSlide)
@@ -496,31 +566,26 @@ var Slides = {
 
       case 'last':
         Slides.onLeave(currentSlide)
-        Slides.currentSlide = Slides.totalSlides
-        Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
+        Slides.currentSlide = Slides.lastSlide
         Slides.onEnter(Slides.currentSlide)
+        Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
         break
 
       default:
         throw new Error('Error while moving... what did you do? You nasty...')
     }
 
-    // be verbose is debug is true
+    // be verbose if debug is true
     Slides.config.debug ? Slides.debugger(nextSlide) : null
-
-    // update DOM
-    Slides.updateHash()
-    Slides.config.showCounter ? Counter.set() : null
     
-    // animation delay
-    setTimeout(Slides.animate, 150)
+    // execute the transition
+    Slides.render()
 
   },
 
   onEnter: function (slide) {
-    // TODO: handle the events in Slides.config.events[idx].onEnter if exists
-    var slidesEvents,
-        events = Slides.config.events
+    var events        = Slides.config.events,
+        slidesEvents  = {};
 
     if (events) { slidesEvents = Slides.config.events[slide] };
 
@@ -533,9 +598,8 @@ var Slides = {
   },
 
   onLeave: function (slide) {
-    // TODO: handle the events in Slides.config.events[idx].onLeave if exists
-    var slidesEvents,
-        events = Slides.config.events
+    var events        = Slides.config.events,
+        slidesEvents  = {};
 
     if (events) { slidesEvents = Slides.config.events[slide] };
 
@@ -552,15 +616,28 @@ var Slides = {
    *  handler for the animation to move the slides
    */
   animate: function () {
-    var slides = Slides.container.children()
-    slides.css('-webkit-transform', 'translateX(' + Slides.translateAmount+ 'px)')
+    var slides = Slides.container.children(),
+        value  = Slides.translateAmount;
+
+    // update DOM
+    Slides.config.showCounter ? Counter.set() : null
+
+    // apply the transition
+    slides.css('-webkit-transform', 'translateX(' + value + 'px)');
+    slides.css('transform', 'translateX(' + value + 'px)')
+
+    setTimeout(Slides.updateHash, 600)
   },
 
   /**
    *  update the address on the browser
    */
   updateHash: function () {
-    location.hash = Slides.config.hash + Slides.currentSlide
+    var hash  = Slides.config.hash,
+        slide = Slides.currentSlide;
+
+    // update the address hash
+    location.hash = hash + slide
   }
 };
 
@@ -572,8 +649,10 @@ var Counter = {
   },
   /** set the value of the label if present */
   set: function () {
-    var text = 'Slide ' + (Slides.currentSlide + 1) + ' of ' + (Slides.totalSlides + 1),
-        $label = $counter.find('.label');
+    var current = Slides.currentSlide + 1,
+        total   = Slides.lastSlide + 1,
+        text    = 'Slide ' + current + ' of ' + total,
+        $label  = $counter.find('.label');
 
     $($label[0]).text(text)
   },
@@ -598,31 +677,17 @@ var Interface = {
 
   addEventListeners: function () {
     // click events for slides buttons
-    $button.first.on('click', function () {
-      $(App).trigger('moveTo', ['first'])
-    });
-    $button.prev.on('click', function () {
-      $(App).trigger('moveTo', ['prev'])
-    });
-    $button.next.on('click', function () {
-      $(App).trigger('moveTo', ['next'])
-    });
-    $button.last.on('click', function () {
-      $(App).trigger('moveTo', ['last'])
-    });
+    $button.first.on('click', function () { App.go('first') });
+    $button.prev.on('click', function () { App.go('prev') });
+    $button.next.on('click', function () { App.go('next') });
+    $button.last.on('click', function () { App.go('last') });
 
     // event for the toggler button
-    $button.toggle.on('click', function() {
-      Interface.toggle()
-    });
+    $button.toggle.on('click', Interface.toggle);
 
     // custom events
-    $(Interface).on('toggleUI', function () {
-      Interface.onToggleUI()
-    });
-    $(Interface).on('setButtonsClass', function () {
-      Interface.onToggleButtons()
-    })
+    $(Interface).on('toggleUI', Interface.onToggleUI);
+    $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
   
   /** event triggers */
@@ -636,28 +701,27 @@ var Interface = {
    */ 
   onToggleButtons: function () {
     var currentSlide = Slides.currentSlide,
-        lastSlide = Slides.totalSlides;
-        allButtons = $button.wrapper.children();
+        lastSlide    = Slides.lastSlide,
+        allButtons   = $button.wrapper.children(),
+        allDisabled  = $(allButtons[0]).is('disabled');
 
     Slides.config.debug ? console.log('App current state', App.state) : null;
 
-     /**
+    /**
       * should be true after the next if statement is executed.
       * prevents useless checking if there is just one slide to show
       * and buttons are already disabled.
-      * could be deprecated since there is no way this method can be called
+      * could be deprecated since there is no way onToggleButtons() is called
       * if there is just one slide to show
-      */
-     if (lastSlide === 0 && $(allButtons[0]).is('disabled')) {
-       return
-     };
+     */
+    if (lastSlide === 0 && allDisabled) return;
 
     /**
      * should be true just the first time it runs or never.
      * disables all the buttons if there is just one slide to show
      * and the first one is not disabled
      */
-    if (lastSlide === 0 && $(allButtons[0]).is(':not(disabled)')) {
+    if (lastSlide === 0 && !allDisabled) {
       for (var i = 0; i < allButtons.length; i++) {
         var button = $(allButtons[i]);
         button.addClass('disabled');
