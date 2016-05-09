@@ -503,7 +503,11 @@ var Slides = {
 
   onEnter: function (slide) {
     // TODO: handle the events in Slides.config.events[idx].onEnter if exists
-    var slidesEvents = Slides.config.events[slide]
+    var slidesEvents,
+        events = Slides.config.events
+
+    if (events) { slidesEvents = Slides.config.events[slide] };
+
     if (!slidesEvents) return;
     var fn = slidesEvents.onEnter
     // end the function if event is not present
@@ -514,7 +518,11 @@ var Slides = {
 
   onLeave: function (slide) {
     // TODO: handle the events in Slides.config.events[idx].onLeave if exists
-    var slidesEvents = Slides.config.events[slide]
+    var slidesEvents,
+        events = Slides.config.events
+
+    if (events) { slidesEvents = Slides.config.events[slide] };
+
     if (!slidesEvents) return;
     var fn = slidesEvents.onLeave
     
