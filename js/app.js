@@ -343,25 +343,17 @@ var Slides = {
     
     Slides.updateHash();
 
-    if (Slides.config.debug) {
-      console.info('--- Initial state ---');
-      console.log('App current state', App.state)
-      console.info('total slides to show: ' + (Slides.lastSlide + 1));
-      console.info('initial slide: ' + (Slides.currentSlide));
-      console.info('initial window width: ' + Slides.windowWidth);
-      console.info('initial slide width: ' + Slides.slideWidth);
-      console.info('initial translation: ' + Slides.translateAmount);
-    };
+    if (Slides.config.debug) Slides.debugger(0);
   },
 
   debugger: function (nextSlide) {
     console.log('------ DEBUGGER ------')
     console.log('App current state', App.state)
-    console.log('total slides: ' + (this.lastSlide + 1))
+    console.log('total slides: ' + (Slides.lastSlide + 1))
     console.log('going to slide # ' + nextSlide)
-    console.log('window width: ' + this.windowWidth)
-    console.log('slide width: ' + this.slideWidth)
-    console.log('translation of: ' + this.translateAmount)
+    console.log('window width: ' + Slides.windowWidth)
+    console.log('slide width: ' + Slides.slideWidth)
+    console.log('translation of: ' + Slides.translateAmount)
   },
 
   /** get the window dimensions */
@@ -455,23 +447,6 @@ var Slides = {
   },
 
   /**
-   * set the margins of the slide, moving them in the correct position
-   * @param {[type]} width [description]
-   */
-  _setMargins: function () {
-    /** @var {array} all the slides */
-    var slides = Slides.container.children()
-    
-    // add add a left margin to accomodate the other slides
-    for (var i = 0; i < slides.length; i++) {
-      var slide  = $(slides[i]),
-          margin = Slides.slideWidth * i;
-
-      // slide.css('margin-left', margin)
-    }
-  },
-
-  /**
    * Handles the (re)size of the slideshow content.
    * Used at the beginning to set the spacing and every time that the window
    * changes its size, to handle the new width of the view
@@ -484,7 +459,6 @@ var Slides = {
     Slides.slideWidth = width;
     Slides.windowWidth = width;
 
-    Slides._setMargins()
 
     /** if needed reset transition width to accomodate new window width */
     if (Slides.currentSlide > 0) {
@@ -503,7 +477,6 @@ var Slides = {
         resize = Slides.windowWidth !== width;
 
     /** if app is still initializing set initial margins */
-    if (!App.state.initialized) Slides._setMargins();
 
     // if (App.state.initialized && !resize) return;
     if (resize) Slides._handleResize(width);
@@ -705,9 +678,10 @@ var Interface = {
     $button.prev.on('click', function () { App.go('prev') });
     $button.next.on('click', function () { App.go('next') });
     $button.last.on('click', function () { App.go('last') });
-
+    $button.black.on('click', function () { App.dim() });
     // event for the toggler button
     $button.toggle.on('click', Interface.toggle);
+    $dimmer.on('click', function () { App.dim() })
 
     // custom events
     $(Interface).on('toggleUI', Interface.onToggleUI);
