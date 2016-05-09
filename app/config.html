@@ -2,10 +2,10 @@
   <div class="ui form tall piled segment" style="width: 320px">
     <div class="ui basic segment">
       <h3 class="ui blue header">
-        <i class="circular blue inverted info icon"></i>
+        <i class="circular blue inverted folder open icon"></i>
       <div class="content">
         <div class="header">Find your slideshow</div>
-        <div class="sub header">set folder and number of slides</div>
+        <div class="sub header">Choose the slideshow to show and configure</div>
       </div>
       </h3>
     </div>
@@ -25,24 +25,33 @@
         </div>
       </div>
     </div>
-    <div class="ui horizontal divider"><i class="setting icon"></i>settings</div>
-    <div class="ui center aligned basic segment">
-      <div class="inline field">
-        <div class="ui toggle checkbox">
-          <input name="counterToggle" type="checkbox" checked tabindex="0" class="hidden">
-          <label>Show counter</label>
-        </div>
+    <!-- settings accordion -->
+    <div data-role="configSettingsAccordion" class="ui accordion">
+      <div class="ui title horizontal divider">
+        <i class="blue setting icon"></i>
+        settings
+        <i class="dropdown icon"></i>
       </div>
-      <div class="inline field">
-        <div class="ui toggle checkbox">
-          <input name="controlsToggle" type="checkbox" checked tabindex="0" class="hidden">
-          <label>Open controls</label>
+      <div class="content">
+        <div class="ui center aligned basic segment">
+          <div class="inline field">
+            <div class="ui toggle checkbox">
+              <input name="counterToggle" type="checkbox" checked tabindex="0" class="hidden">
+              <label>Show counter</label>
+            </div>
+          </div>
+          <div class="inline field">
+            <div class="ui toggle checkbox">
+              <input name="controlsToggle" type="checkbox" checked tabindex="0" class="hidden">
+              <label>Open controls</label>
+            </div>
+          </div>
         </div>
-      </div>
+      </div>  
     </div>
-
-    <div class="ui basic blue center aligned segment">
-      <div id="load_slideshow_btn" class="ui large primary right labeled icon button">
+    <!-- submit area -->
+    <div class="ui basic center aligned segment">
+      <div id="load_slideshow_btn" class="ui large blue right labeled icon button">
         <i class="send icon"></i>
         Load slideshow
       </div>

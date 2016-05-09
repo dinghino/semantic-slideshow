@@ -589,11 +589,7 @@ var Slides = {
 
     Slides.config.showCounter ? Counter.set() : null
 
-    // apply the transition
-    // slides.css('-webkit-transform', 'translateX(' + value + 'px)');
-    // slides.css('transform', 'translateX(' + value + 'px)')
-
-    setTimeout(Slides.updateHash, 600)
+    setTimeout(Slides.updateHash, 100)
   },
 
   /**
@@ -611,7 +607,7 @@ var Slides = {
 
 var Counter = {
   init: function () {
-    $counter.append('<div class="ui left pointing label"></div>')
+    $counter.append('<div class="ui left pointing grey basic label"></div>')
     Counter.set()
   },
   /** set the value of the label if present */

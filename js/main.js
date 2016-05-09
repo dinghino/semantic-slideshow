@@ -56,7 +56,7 @@
         $slides_loader = $('#load_slideshow_btn');
         // initialization for loading screen
         $('.ui.checkbox').checkbox()
-        
+        $('[data-role="configSettingsAccordion"]').accordion()
         _enableSlideLoader()
         // load the rest of the UI and 
         _loadApp()
