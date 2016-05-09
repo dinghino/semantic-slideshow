@@ -71,16 +71,6 @@ var App = {
       Slides.config = Object.assign(Slides.config, config)
     })
 
-    .on('setSlidesEvents', function (e) {
-      App.fetchConfig()
-      setTimeout(function () {
-        // save custom events locally inside Slides.config.events
-        Slides.config.events = window._slidesEvents
-        // enable the events
-        App.enableEvents()
-      }, 50)
-    })
-
     .on('loadSlides', function (e, totalSlides, config) {
       // initializing slideshow
       App.updateConfig(config)
@@ -140,15 +130,16 @@ var App = {
     })
   },
 
-  /**event triggers */
+  /**
+   * event triggers
+   */
+  /** load a slideshow with the given total slides and configuration */
   loadSlideshow: function (totalSlides, config) {
     $(App).trigger('loadSlides', [totalSlides, config])
   },
-  loadSlidesEvents: function () { $(App).trigger('setSlidesEvents') },
-  enableEvents: function () { $(App).trigger('enableCustomEvents') },
-  go: function (direction) { $(App).trigger('moveTo', [direction]) },
-  slidesReady: function () { $(App).trigger('slideShowReady') },
-  render: function () { $(App).trigger('updateSlideSize') },
+  /** update Slides.config object with custom config */
+  updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
+  /** get the custom script file from the slideshow folder */
   fetchEvents: function (fileName) {
     if (!fileName) fileName = 'script'
     var path = Slides.config.folder + '/' + fileName + '.js'
@@ -164,7 +155,16 @@ var App = {
       App.slidesReady()
     });
   },
-  updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
+  /** enable custom events */
+  enableEvents: function () { $(App).trigger('enableCustomEvents') },
+  /**  move the slides */
+  go: function (direction) { $(App).trigger('moveTo', [direction]) },
+  /** finalize the initialization */
+  slidesReady: function () { $(App).trigger('slideShowReady') },
+  /** rerender the slides and content, adjusting to window resize */
+  render: function () { $(App).trigger('updateSlideSize') },
+
+  /** get the about info and set them into the page */
   setAboutInfo: function () {
     var info = App.info
     if(!info.email) about.authorEmail.hide()
