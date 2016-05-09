@@ -60,7 +60,7 @@ body {
   -webkit-box-orient: horizontal;
   -webkit-box-pack: center;
 
-  display: box!important;
+  display: box;
   box-align: center;
   box-orient: horizontal;
   box-pack: center;

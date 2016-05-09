@@ -323,8 +323,8 @@ var Slides = {
 
     // default animations for slide transition
     transition: {
-      enter: 'fly left',
-      leave: 'fly right',
+      left: 'fly left',
+      right: 'fly right',
     },
 
     // start with button toggled on or off
@@ -399,7 +399,8 @@ var Slides = {
     return $('<div>', {
       id: hash + idx,
       // TODO: use semantic-ui transitions setting initial status
-      class: idx > 0 ? 'transition hidden' : 'transition visible'
+      class: idx > 0 ? 'transition hidden' : 'transition visible',
+      style: idx === 0 ? 'display: -webkit-box !important;' : ''
     })[0]
   },
 
@@ -437,9 +438,6 @@ var Slides = {
 
       $.get(nextSlide)
       .fail(function (e) {
-        loadStatus = 'FAIL'
-        console.log('fail')
-
         /** error handling */
         handleError(e)
 
@@ -464,7 +462,6 @@ var Slides = {
         if (callback) setTimeout(callback, 50);
       })
       .success(function(data, status, xhr) {
-        console.log('success')
         /** success callback */
         $(bit).append($(data)[0]);
 
@@ -638,27 +635,39 @@ var Slides = {
    *  handler for the animation to move the slides
    */
   animate: function (prevSlide, nextSlide) {
-    var slides = Slides.container.children(),
-        value  = Slides.translateAmount,
-        hash   = Slides.config.hash;
-        prev   = '',
-        next   = '';
+    var slides      = Slides.container.children(),
+        value       = Slides.translateAmount,
+        hash        = Slides.config.hash;
+        prev        = '',
+        next        = '',
+        transition = {
+          enter: '',
+          leave: ''
+        };
 
-    if(prevSlide) prev = $('#'+ hash + prevSlide);
-    if(nextSlide) next = $('#'+ hash + nextSlide);
+    /** get the dom elements corresponding the slides to animate */
+    if (typeof prevSlide === 'number') prev = $('#'+ hash + prevSlide);
+    if (typeof nextSlide === 'number') next = $('#'+ hash + nextSlide);
 
+    /** set the animations to use for the transition */
+    if (prevSlide > nextSlide) {
+      transition.leave = Slides.config.transition.left
+      transition.enter = Slides.config.transition.right
+    } else {
+      transition.leave = Slides.config.transition.right
+      transition.enter = Slides.config.transition.left
+    }
 
-    console.log(prevSlide, nextSlide)
-    console.log($(prev), $(next))
 
     // update DOM
-    Slides.config.showCounter ? Counter.set() : null
     if (prev) {
-      prev.transition(Slides.config.transition.leave)
+      prev.transition(transition.leave)
     }
     if (next) {
-      next.transition(Slides.config.transition.enter)
+      next.transition(transition.enter)
     }
+
+    Slides.config.showCounter ? Counter.set() : null
 
     // apply the transition
     // slides.css('-webkit-transform', 'translateX(' + value + 'px)');
