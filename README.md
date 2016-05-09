@@ -57,9 +57,14 @@ var config = {
 
 ## Advanced config and usage
 
-The app can handle custom events and call. Since the slides are just html files that are loaded inside index.html, you can add a `script` tag inside one of the pages (the first one, maybe?) and use all the javascript you want to handle special functionalities.
-You can also access `event hooks` from the app, such as `onEnter` and `onLeave` in and from a slide. To do so you have to manually create a events object with all the methods inside one of the slides.  
-This object **MUST BE GLOBALLY DECLARED** so **NO** var in front of it and must be called `_slidesEvents`. inside that you can put nested object, one for each slide you need to access, with that slide index as name, setting the callbacks as properties. if a slide index is missing or a property is not a function it gets ignored by the hook.
+The app can handle custom events and call.  
+Since the slides are just html files that are loaded inside index.html, you can add a `script` tag inside one of the pages (the last one, maybe?) and use all the javascript you want to handle special functionalities.  
+
+You can also define a custom `script.js` file inside your slideshow folder that the app will try to get, using `jQuery.getScript()`, after loading all the slides into the slideshow.  
+
+You can access `event hooks` from the app, such as `onEnter` and `onLeave` in and from a slide.  
+To do so you have to manually create a events object with all the methods inside one of the slides.  
+This object **MUST BE GLOBALLY DECLARED** so **NO** var in front of it and must be called `_slidesEvents`. inside that you can put nested objects, one for each slide you need to access, with that slide index as name, setting the callbacks as properties. if a slide index is missing or a property is not a function it gets ignored by the hook.
 
 ### Example
 
@@ -78,7 +83,7 @@ _slidesEvents = {
 }
 
 ```
-Keep in mind that events are triggered just before the animation starts.
+Keep in mind that events are triggered just before the animation starts moving the slides. If there are events for the first slide (slide 0.html) they will trigger immediately after loading.
 
 ### hooks and event handlers
 
@@ -91,16 +96,15 @@ Keep in mind that events are triggered just before the animation starts.
 With these you can actually handle the slideshow programmatically, for example by having a button to go to the next or previous slide from a element (I will try to add a _go to slide number_ later on).
 
 * App
-  * `.go({dir})` accepts one of `first`, `last`, `next`, `prev` and handles the movement of the slides
-  * `.loadSlideshow([slides#], {config})` **requires** at least the first argument (min = 1). there is a default config stored already
-  * `updateConfig({config})` manually update the config stored in Slides.config
+  * `.go(direction {string})` accepts one of `first`, `last`, `next`, `prev` and handles the movement of the slides
+  * `.loadSlideshow(slides# {number}, config {object})` **requires** at least the first argument (min = 1). there is a default config stored already
+  * `updateConfig(config {object})` manually update the config stored in Slides.config
   * `render()` re-render and assign styling to the slides. used when window changes sizes and at initialization
 * Interface
   * `toggle()` toggles on or off the interface
   * `toggleButtons()` refresh directional buttons classes. handles `disabled` class
 
-
-To see an example usage with all (?) the functionalities, check the `slideshows/` folder files.
+To see an example usage with all (?) the functionalities, check the `slideshow/` folder files.
 
 ## Controls
 
