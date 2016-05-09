@@ -72,6 +72,7 @@ var App = {
     })
 
     .on('setSlidesEvents', function (e) {
+      App.fetchConfig()
       setTimeout(function () {
         // save custom events locally inside Slides.config.events
         Slides.config.events = window._slidesEvents
@@ -148,6 +149,21 @@ var App = {
   go: function (direction) { $(App).trigger('moveTo', [direction]) },
   slidesReady: function () { $(App).trigger('slideShowReady') },
   render: function () { $(App).trigger('updateSlideSize') },
+  fetchEvents: function (fileName) {
+    if (!fileName) fileName = 'script'
+    var path = Slides.config.folder + '/' + fileName + '.js'
+    
+    console.log('trying to load', path) 
+    $.getScript(path)
+    .done(function (script, status) {
+      console.log('script found!', status)
+      App.enableEvents()
+    })
+    .fail(function (jqxhr, settings, exception) {
+      console.log('no extra script found', jqxhr.status)
+      App.slidesReady()
+    });
+  },
   updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
   setAboutInfo: function () {
     var info = App.info
@@ -303,7 +319,7 @@ var Slides = {
     Slides.totalSlides = (totalSlides - 1);
 
     // if everything's ok load the content of the slides
-    Slides.loadContent(App.loadSlidesEvents);
+    Slides.loadContent(App.fetchEvents);
     // set initial slide widths, applying left-margin to compensate
     Slides.handleResize();
     // set initial state for the buttons
