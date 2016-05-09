@@ -303,7 +303,7 @@ var Slides = {
    */
   init: function (totalSlides) {
     // Throw an error if no slides number is passed
-    if (!totalSlides) throw new Error('Please pass the total number of slides')
+    // if (!totalSlides) throw new Error('Please pass the total number of slides')
 
     /** INITIALIZATION */
 
@@ -315,13 +315,22 @@ var Slides = {
     
     /** START LOADING */
     
-    // set the number of the total slides
-    Slides.totalSlides = (totalSlides - 1);
+    // run if a total slides number has been provided
+    if(totalSlides) {
+      // set the number of the total slides
+      Slides.totalSlides = (totalSlides - 1);
 
-    // if everything's ok load the content of the slides
-    Slides.loadContent(App.fetchEvents);
-    // set initial slide widths, applying left-margin to compensate
-    Slides.handleResize();
+      // if everything's ok load the content of the slides
+      Slides.loadContent(App.fetchEvents);
+
+      // set initial slide widths, applying left-margin to compensate
+      App.render();
+    } else { // if no number of slides have been passed
+
+      Slides.fetchContent(App.fetchEvents)
+      App.render();
+    };
+
     // set initial state for the buttons
     Interface.toggleButtons();
 
@@ -374,44 +383,140 @@ var Slides = {
    */
   loadContent: function (callback) {
     // DOM fragments. Will be al the slides content
-    var frag = document.createDocumentFragment(),
+    var frag        = document.createDocumentFragment(),
         totalSlides = Slides.totalSlides,
-        folder = Slides.config.folder,
-    // piece of fragment, will contain one <div> for each slide
-        bit;
+        hash        = Slides.config.hash,
+        folder      = Slides.config.folder,
+        bit,
+        i;
     
-    for (var i = 0; i < (totalSlides + 1); i++) {
-      bit = $('<div id=' + Slides.config.hash + i + '"></div>') 
-        .load(
-          (folder + '/' + i + '.html'),
-          function (response, status, xhr) { 
-            if (status === 'error') {
-              console.log('error in retrieving slide', i, 'from', folder)
-            }
-          }
-        )[0];
+    function loadCallback (response, status, xhr) {
+      if (status === 'error') {
+        console.log('error in retrieving slide', i, 'from', folder)
+      }
+    };
+    
+    for (i = 0; i < (totalSlides + 1); i++) {
+      var nextSlide = folder + '/' + i + '.html'; 
+
+      bit = $('<div id=' + hash + i + '"></div>')
+              .load(nextSlide, loadCallback)[0];
 
       frag.appendChild(bit);
     } // end for cycle
 
     // append the fragments to the DOM into this.config.container
     Slides.container.append(frag)
+    
+    // debug stuff
     Slides.config.debug ? console.info('All slides loaded. continuing') : null
-    // execute callback function.
-    // should be Slides.config.events
+    
+    // execute callback function. Should be Slides.config.events
     if (callback) setTimeout(callback, 50);
-     
+  },
+
+  fetchContent: function (callback) {
+    console.log('fetching slides')
+    // local config
+    var frag        = document.createDocumentFragment(),
+        hash        = Slides.config.hash,
+        slidesQty   = 0,
+        folder      = Slides.config.folder,
+        loadStatus  = 'OK',
+        bit,
+        i = 0;
+
+    function checkStatus (response, status, xhr) {
+      debugger
+      console.log(status)
+      if (status === 'error') {
+        loadStatus = status;
+        return
+      }
+    };
+
+    // loop a $.load() as long as slides are found in the folder
+    // while (i < 5) {
+    function fetch () {
+      if (loadStatus !== 'OK' || i > 5) return;
+      
+      var nextSlide = folder + '/' + slidesQty + '.html'; 
+      bit = $('<div />',{ id: hash + slidesQty })[0]
+
+      $.get(nextSlide)
+      .always(function () {
+        console.log('ALWAYS |', slidesQty)
+      })
+      .fail(function (e) {
+        console.log('FAIL | slide', slidesQty)
+        loadStatus = 'fail'
+        /** error handling */
+        if (e.status == 0) {
+            console.warn(' Check Your Network.');
+          } else if (e.status == 404) {
+            console.warn('It seems we loaded the last slide. You have', slidesQty, 'slides');
+          } else if (e.status == 500) {
+            console.warn('Internel Server Error.');
+          }  else {
+            console.warn('Unknow Error.\n' + e.responseText);
+        }
+
+        /**
+         * Since fail means that there are no more slides to load, 
+         * append everything into the dom and continue configuring the slideshow
+         */
+        // set the total slides quantity into Slides to be used later on 
+        Slides.totalSlides = --slidesQty
+        // append the fragments to the DOM into this.config.container
+        console.log('appending')
+        Slides.container.append(frag)
+
+        // debug stuff
+        Slides.config.debug ? console.info('All slides loaded. continuing') : null
+        
+        // set initial slide widths, applying left-margin to compensate
+        setTimeout(Slides.handleResize, 150);
+
+        // execute callback function. Should be Slides.config.events
+        if (callback) setTimeout(callback, 150);
+
+      })
+      .success(function(data, status, xhr) {
+        /** success callback */
+        console.log('SUCCESS | slide', slidesQty, ' retrieved')
+        // console.log(data, $(data), $(data)[0])
+        $(bit).append($(data)[0]);
+
+        frag.appendChild(bit);
+
+        if (status === 'error') loadStatus = status
+        ++slidesQty
+        fetch()
+      })
+      .done(function () {
+        console.log('DONE | slide', slidesQty)
+      })
+
+    };
+
+    fetch()
+
   },
 
   /** set the width of the slides, adding margin to accomodate all the slides */
   handleResize: function () {
+    console.log('resizing')
     var width = Slides.getWindowSize().width
     
     // {boolean} true if window has been resized
     var widthChanged = !(width === Slides.windowWidth) 
 
+    // if (!App.state.initialized) { }
+
     // if width didn't change do nothing
-    if (!widthChanged) return;
+    // if (!widthChanged) return;
+    
+    console.info('resizing!')
     Slides.config.debug ? console.warn('Window width changed. handling') : null
 
     // assign width to Slides properties
