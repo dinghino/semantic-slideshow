@@ -196,67 +196,6 @@ var App = {
       })
   },
 
-  /** instantiate event listeners on key press */
-  onKeyPress: function () {
-    $(document.body).keydown(function(e) {
-
-      var key = e.keyCode
-
-      /**
-       * keycode shortcuts * legend
-       *
-       * right:     -> key, presenter right, SPACE
-       * left:      <- key, presenter left
-       * home:      HOME key
-       * end:       END key
-       * toggle:    T key 
-       * blackout:  keycode 190 for presenter | TODO: find a keyboard key
-       */
-
-      var right  = key === 39 || key === 34 || key === 32,
-          left   = key === 37 || key === 33,
-          home   = key === 36,
-          end    = key === 35,
-          toggle = key === 84,
-          dim    = key === 190;
-
-      // if one of those is pressed decide what direction to go
-      if (left) {
-        e.preventDefault();
-        if (Slides.currentSlide === 0) return;
-        App.go('prev')
-        return
-      }
-      if (right) {
-        e.preventDefault();
-        if (Slides.currentSlide === Slides.lastSlide) return;
-        App.go('next')
-        return
-      }
-      if (home) {
-        e.preventDefault();
-        if(Slides.currentSlide === 0) return
-        App.go('first')
-        return
-      }
-      if (end) {
-        e.preventDefault();
-        if(Slides.currentSlide === Slides.lastSlide) return
-        App.go('last')
-        return
-      }
-      if (toggle) {
-        e.preventDefault();
-        Interface.toggle();
-        return
-      }
-      if (dim) {
-        e.preventDefault()
-        App.dim()
-      }
-    });
-  },
-
   /** add event listeners to document to handle events */
   addWindowListeners: function () {
     // add event and attach render method as callback
@@ -334,7 +273,7 @@ var Slides = {
     /** INITIAL EVENTS */
 
     //  listen to key press events
-    !App.state.initialized ? App.onKeyPress() : null;
+    !App.state.initialized ? Interface.addKeyPressEvents() : null;
 
     // determine width of the canvas and set properties
     var width = Slides.getWindowWidth();
@@ -687,7 +626,76 @@ var Interface = {
     $(Interface).on('toggleUI', Interface.onToggleUI);
     $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
-  
+ 
+
+  /** instantiate event listeners on key press */
+  addKeyPressEvents: function () {
+    $(document.body).keydown(function(e) {
+
+      var key = e.keyCode
+
+      /**
+       * keycode shortcuts * legend
+       *
+       * right:     -> key, presenter right, SPACE
+       * left:      <- key, presenter left
+       * home:      HOME key
+       * end:       END key
+       * toggle:    T key 
+       * blackout:  "." (mark) key, presenter black screen
+       */
+
+      var right  = key === 39 || key === 34 || key === 32,
+          left   = key === 37 || key === 33,
+          home   = key === 36,
+          end    = key === 35,
+          toggle = key === 84,
+          dim    = key === 190;
+
+      // if one of those is pressed decide what direction to go
+      if (left) {
+        e.preventDefault();
+        if (Slides.currentSlide === 0) return;
+        App.go('prev')
+        return
+      }
+      if (right) {
+        e.preventDefault();
+        if (Slides.currentSlide === Slides.lastSlide) return;
+        App.go('next')
+        return
+      }
+      if (home) {
+        e.preventDefault();
+        if(Slides.currentSlide === 0) return
+        App.go('first')
+        return
+      }
+      if (end) {
+        e.preventDefault();
+        if(Slides.currentSlide === Slides.lastSlide) return
+        App.go('last')
+        return
+      }
+      if (toggle) {
+        e.preventDefault();
+        Interface.toggle();
+        return
+      }
+      if (dim) {
+        e.preventDefault()
+        App.dim()
+      }
+    });
+  },
+
+  disableTransitions: function () {
+    // TODO: disable transitions listeners
+  },
+  restoreTransitions: function () {
+    // TODO: re enable transition listeners
+  },
+
   /** event triggers */
   toggleButtons: function () { $(Interface).trigger('setButtonsClass') },
   toggle: function () { $(Interface).trigger('toggleUI') },
