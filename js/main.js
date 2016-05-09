@@ -20,7 +20,20 @@
             showCounter: counter
           }
 
-          App.loadSlideshow(config);
+          function validateSuccess () { App.loadSlideshow(config) };
+          function validateFailure () {
+            var message = $('[data-role="loadingErrorBox"]'),
+                icon = $(message).children('.icon');
+
+            $(message).transition({
+              animation: 'fade up',
+              onComplete: function () {
+                $(icon).transition('tada')
+              }
+            })
+          };
+
+          App.validateSlideshowFolder(folder, validateSuccess, validateFailure);
         });
       }
 

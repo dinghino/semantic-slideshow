@@ -8,7 +8,7 @@ var App = {
     author: 'Daniele Calcinai',
     email: 'dinghino@gmail.com',
     gitHub: 'https://github.com/dinghino',
-    version: '0.9.1RC'
+    version: '0.9.3b'
   },
   // current state of the app
   state : {
@@ -38,6 +38,29 @@ var App = {
     App.semanticModules()
     // initialize the buttons and their events
     Interface.init()
+  },
+
+  /**
+   * validate the selected folder before calling App.loadSlideshow()
+   * avoiding unwanted initialization
+   * @param  {string} folderName folder to validate
+   * @param  {func}   success    called if folderName is found
+   * @param  {func}   failure    called if foldername is NOT found
+   */
+  validateSlideshowFolder: function (folderName, success, failure) {
+    // define the path to the test file
+    var test = folderName + '/0.html'
+
+    $.get(test)
+    .success(function () {
+        console.info('success in accessing', folderName + '/')
+        if (success) success();
+      })
+    .fail(function () {
+        console.warn('failure in accessing', folderName + '/');
+        if (failure) failure();
+      })
+
   },
 
   events: function () {
@@ -175,7 +198,7 @@ var App = {
     about.authorGitHub.attr('href', info.gitHub)
   },
 
-  /** Activate semantic-ui modules */
+  /** Activate slideshow UI semantic-ui modules */
   semanticModules: function () {
     $helpIcon.popup({
       inline: true,
