@@ -10,6 +10,7 @@ $button = {
   // slide movement
   first: $('[data-role="btnFirst"]'),
   prev: $('[data-role="btnPrev"]'),
+  black: $('[data-role="blackScreen"]'),
   next: $('[data-role="btnNext"]'),
   last: $('[data-role="btnLast"]'),
   // ui toggler
