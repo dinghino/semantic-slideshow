@@ -111,7 +111,9 @@ var App = {
       Slides.onEnter(Slides.currentSlide)
       App.state.initialized = true
     })
-    .on('renderSlides', Slides.render)
+    .on('renderSlides', function (e, prevSlide, nextSlide) {
+      Slides.render(prevSlide, nextSlide)
+    })
     .on('moveTo', function (e, nextPosition) {
       // move to a direction
       Slides.onGo(nextPosition)
@@ -319,6 +321,12 @@ var Slides = {
     // hash string for the browser address. will get the current slide # after
     hash: 'slide',
 
+    // default animations for slide transition
+    transition: {
+      enter: 'fly left',
+      leave: 'fly right',
+    },
+
     // start with button toggled on or off
     showButtons: true,
 
@@ -369,6 +377,16 @@ var Slides = {
     };
   },
 
+  debugger: function (nextSlide) {
+    console.log('------ DEBUGGER ------')
+    console.log('App current state', App.state)
+    console.log('total slides: ' + (this.lastSlide + 1))
+    console.log('going to slide # ' + nextSlide)
+    console.log('window width: ' + this.windowWidth)
+    console.log('slide width: ' + this.slideWidth)
+    console.log('translation of: ' + this.translateAmount)
+  },
+
   /** get the window dimensions */
   getWindowWidth: function () {
     var width = $(window).width() 
@@ -381,7 +399,7 @@ var Slides = {
     return $('<div>', {
       id: hash + idx,
       // TODO: use semantic-ui transitions setting initial status
-      // class: idx > 0 ? 'transition hidden' : 'transition visible'
+      class: idx > 0 ? 'transition hidden' : 'transition visible'
     })[0]
   },
 
@@ -475,10 +493,16 @@ var Slides = {
       var slide  = $(slides[i]),
           margin = Slides.slideWidth * i;
 
-      slide.css('margin-left', margin)
+      // slide.css('margin-left', margin)
     }
   },
 
+  /**
+   * Handles the (re)size of the slideshow content.
+   * Used at the beginning to set the spacing and every time that the window
+   * changes its size, to handle the new width of the view
+   * @param  {number} width new width of the container
+   */
   _handleResize: function (width) {
     Slides.config.debug ? console.warn('Window width changed. handling') : null
 
@@ -498,7 +522,7 @@ var Slides = {
   },
 
   /** render and animate the slides, updating values if necessary */
-  render: function () {
+  render: function (prevSlide, nextSlide) {
     /** @type {number} current window width */
     var width  = Slides.getWindowWidth(),
     /** @type {bool} true if window changed size */
@@ -511,17 +535,9 @@ var Slides = {
     if (resize) Slides._handleResize(width);
 
     /** execute the animation for the slides */
-    setTimeout(Slides.animate, 0)
-  },
-
-  debugger: function (nextSlide) {
-    console.log('------ DEBUGGER ------')
-    console.log('App current state', App.state)
-    console.log('total slides: ' + (this.lastSlide + 1))
-    console.log('going to slide # ' + nextSlide)
-    console.log('window width: ' + this.windowWidth)
-    console.log('slide width: ' + this.slideWidth)
-    console.log('translation of: ' + this.translateAmount)
+    setTimeout(function () {
+      Slides.animate(prevSlide, nextSlide)
+    }, 0)
   },
 
   /////////////////////
@@ -536,6 +552,7 @@ var Slides = {
   onGo: function (direction) {
     /** local variables */
     var nextSlide,
+        previousSlide,
         currentSlide = Slides.currentSlide
 
     /**
@@ -545,6 +562,7 @@ var Slides = {
     switch (direction) {
       case 'next':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
         nextSlide = ++Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount -= Slides.slideWidth
@@ -552,6 +570,7 @@ var Slides = {
 
       case 'prev':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
         nextSlide = --Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount += Slides.slideWidth
@@ -559,6 +578,8 @@ var Slides = {
 
       case 'first':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
+        nextSlide = 0;
         Slides.currentSlide = 0;
         Slides.translateAmount = 0;
         Slides.onEnter(Slides.currentSlide)
@@ -566,6 +587,8 @@ var Slides = {
 
       case 'last':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
+        nextSlide = Slides.lastSlide
         Slides.currentSlide = Slides.lastSlide
         Slides.onEnter(Slides.currentSlide)
         Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
@@ -579,8 +602,7 @@ var Slides = {
     Slides.config.debug ? Slides.debugger(nextSlide) : null
     
     // execute the transition
-    Slides.render()
-
+    Slides.render(previousSlide, nextSlide)
   },
 
   onEnter: function (slide) {
@@ -615,16 +637,32 @@ var Slides = {
   /**
    *  handler for the animation to move the slides
    */
-  animate: function () {
+  animate: function (prevSlide, nextSlide) {
     var slides = Slides.container.children(),
-        value  = Slides.translateAmount;
+        value  = Slides.translateAmount,
+        hash   = Slides.config.hash;
+        prev   = '',
+        next   = '';
+
+    if(prevSlide) prev = $('#'+ hash + prevSlide);
+    if(nextSlide) next = $('#'+ hash + nextSlide);
+
+
+    console.log(prevSlide, nextSlide)
+    console.log($(prev), $(next))
 
     // update DOM
     Slides.config.showCounter ? Counter.set() : null
+    if (prev) {
+      prev.transition(Slides.config.transition.leave)
+    }
+    if (next) {
+      next.transition(Slides.config.transition.enter)
+    }
 
     // apply the transition
-    slides.css('-webkit-transform', 'translateX(' + value + 'px)');
-    slides.css('transform', 'translateX(' + value + 'px)')
+    // slides.css('-webkit-transform', 'translateX(' + value + 'px)');
+    // slides.css('transform', 'translateX(' + value + 'px)')
 
     setTimeout(Slides.updateHash, 600)
   },
