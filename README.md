@@ -119,8 +119,10 @@ You can always see the controls shortcuts using the `?` button on the bottom lef
 
 #What's next
 
-I've been thinking about adding an interface for the init configuration, so that you can do everything from the UI instead of accessing the code.  
-Also I'm thinking about adding a way to automatically set and call custom callbacks or event listeners for content that's inside the slides.  
-One thing I will most probably do in a not so late future is convert everything in `ES6` and create a `react` component for something very similar to this, as I may need it for a bigger project I'm working on.
+More events hooks, customization and tuning for sure.
+Option to jump to a slide directly, maybe.
+slides attributes like title (using config or data attributes, more probably)
+
+One thing I will most probably do in a not so late future is convert everything in `ES6` and create a small `react` application as standalone and as reusable component since I might need it for a couple of other big projects I'm working.
 
 I don't know if and when I'll do these steps, as I want to tune this as much as possible, but still...
