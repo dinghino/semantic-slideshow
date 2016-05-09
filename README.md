@@ -1,3 +1,8 @@
+> #Preface
+> Project is still REALLY work in progress, so the readme may not mirror the actual code, functionalities etc... I Will try to keep it updated as soon as I can, but for now it would require me to work on it on every push.
+
+> ## Last update to v. 0.8a
+
 # Simple slide presentational app
 
 I needed to create a little presentation and I told myself: _why should I use powerpoint and do it easily, when I can create an app to do the job?_
