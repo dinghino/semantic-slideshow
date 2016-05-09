@@ -627,70 +627,79 @@ var Interface = {
     $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
  
+  validateKeyPress: function (key) {
+    /**
+     * keycode shortcuts * legend
+     *
+     * right:     -> key, presenter right, SPACE
+     * left:      <- key, presenter left
+     * home:      HOME key
+     * end:       END key
+     * toggle:    T key 
+     * blackout:  "." (mark) key, presenter black screen
+     */
+    if (key === 39 || key === 34 || key === 32) return 'right';
+    if (key === 37 || key === 33) return 'left';
+    if (key === 36) return 'home';
+    if (key === 35) return 'end';
+    if (key === 84) return 'toggle';
+    if (key === 190) return 'dim';
+
+    return ''
+  },
+
+  handleKeyPress: function(e) {
+
+    var key = Interface.validateKeyPress(e.keyCode);
+
+    // if one of those is pressed decide what direction to go
+    switch (key) {
+      case 'left':
+        e.preventDefault();
+        if (Slides.currentSlide === 0) break;
+        App.go('prev')
+        break
+
+      case 'right':
+        e.preventDefault();
+        if (Slides.currentSlide === Slides.lastSlide) break;
+        App.go('next')
+        break
+
+      case 'home':
+        e.preventDefault();
+        if(Slides.currentSlide === 0) break
+        App.go('first')
+        break
+
+      case 'end':
+        e.preventDefault();
+        if(Slides.currentSlide === Slides.lastSlide) break
+        App.go('last')
+        break
+
+      case 'toggle':
+        e.preventDefault();
+        Interface.toggle();
+        break
+
+      case 'dim':
+        e.preventDefault()
+        App.dim()
+
+      default:
+        throw new Error('Unexpected movement triggered. please do something!')
+    }
+  },
 
   /** instantiate event listeners on key press */
   addKeyPressEvents: function () {
-    $(document.body).keydown(function(e) {
-
-      var key = e.keyCode
-
-      /**
-       * keycode shortcuts * legend
-       *
-       * right:     -> key, presenter right, SPACE
-       * left:      <- key, presenter left
-       * home:      HOME key
-       * end:       END key
-       * toggle:    T key 
-       * blackout:  "." (mark) key, presenter black screen
-       */
-
-      var right  = key === 39 || key === 34 || key === 32,
-          left   = key === 37 || key === 33,
-          home   = key === 36,
-          end    = key === 35,
-          toggle = key === 84,
-          dim    = key === 190;
-
-      // if one of those is pressed decide what direction to go
-      if (left) {
-        e.preventDefault();
-        if (Slides.currentSlide === 0) return;
-        App.go('prev')
-        return
-      }
-      if (right) {
-        e.preventDefault();
-        if (Slides.currentSlide === Slides.lastSlide) return;
-        App.go('next')
-        return
-      }
-      if (home) {
-        e.preventDefault();
-        if(Slides.currentSlide === 0) return
-        App.go('first')
-        return
-      }
-      if (end) {
-        e.preventDefault();
-        if(Slides.currentSlide === Slides.lastSlide) return
-        App.go('last')
-        return
-      }
-      if (toggle) {
-        e.preventDefault();
-        Interface.toggle();
-        return
-      }
-      if (dim) {
-        e.preventDefault()
-        App.dim()
-      }
-    });
+    $(document.body).keydown(Interface.handleKeyPress);
   },
 
   disableTransitions: function () {
     // TODO: disable transitions listeners
+    document.body.removeEventListener('keypress', Interface.handleKeyPress)
   },
   restoreTransitions: function () {
     // TODO: re enable transition listeners
