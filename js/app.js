@@ -1,26 +1,3 @@
-// selectors for DOM elements
-var $helpIcon = $('[data-role="helpIcon"]'),
-    $counter = $('[data-role="counter"]'),
-    $authorAccordion = $('[data-role="authorAccordion"]'),
-    $slideContainer = $('[data-role="slides"]');
-    $dimmer = $('[data-role="dimmer"]')
-var $button = {
-  // wrapper for slide movement buttons
-  wrapper: $('[data-role="buttons"]'),
-  // slide movement
-  first: $('[data-role="btnFirst"]'),
-  prev: $('[data-role="btnPrev"]'),
-  next: $('[data-role="btnNext"]'),
-  last: $('[data-role="btnLast"]'),
-  // ui toggler
-  toggle: $('[data-role="toggle"]')
-};
-var about = {
-  authorEmail: $('[data-role="authorEmail"]'),
-  authorGitHub: $('[data-role="authorGitHub"]'),
-  appVersion: $('[data-role="appVersion"]')
-};
-
 /**
  * Main application object. Handles events, initialization and general state of
  * the app.
