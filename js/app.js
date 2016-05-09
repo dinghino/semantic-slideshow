@@ -1,26 +1,3 @@
-// selectors for DOM elements
-var $helpIcon = $('[data-role="helpIcon"]'),
-    $counter = $('[data-role="counter"]'),
-    $authorAccordion = $('[data-role="authorAccordion"]'),
-    $slideContainer = $('[data-role="slides"]');
-    $dimmer = $('[data-role="dimmer"]')
-var $button = {
-  // wrapper for slide movement buttons
-  wrapper: $('[data-role="buttons"]'),
-  // slide movement
-  first: $('[data-role="btnFirst"]'),
-  prev: $('[data-role="btnPrev"]'),
-  next: $('[data-role="btnNext"]'),
-  last: $('[data-role="btnLast"]'),
-  // ui toggler
-  toggle: $('[data-role="toggle"]')
-};
-var about = {
-  authorEmail: $('[data-role="authorEmail"]'),
-  authorGitHub: $('[data-role="authorGitHub"]'),
-  appVersion: $('[data-role="appVersion"]')
-};
-
 /**
  * Main application object. Handles events, initialization and general state of
  * the app.
@@ -111,7 +88,9 @@ var App = {
       Slides.onEnter(Slides.currentSlide)
       App.state.initialized = true
     })
-    .on('renderSlides', Slides.render)
+    .on('renderSlides', function (e, prevSlide, nextSlide) {
+      Slides.render(prevSlide, nextSlide)
+    })
     .on('moveTo', function (e, nextPosition) {
       // move to a direction
       Slides.onGo(nextPosition)
@@ -217,67 +196,6 @@ var App = {
       })
   },
 
-  /** instantiate event listeners on key press */
-  onKeyPress: function () {
-    $(document.body).keydown(function(e) {
-
-      var key = e.keyCode
-
-      /**
-       * keycode shortcuts * legend
-       *
-       * right:     -> key, presenter right, SPACE
-       * left:      <- key, presenter left
-       * home:      HOME key
-       * end:       END key
-       * toggle:    T key 
-       * blackout:  keycode 190 for presenter | TODO: find a keyboard key
-       */
-
-      var right  = key === 39 || key === 34 || key === 32,
-          left   = key === 37 || key === 33,
-          home   = key === 36,
-          end    = key === 35,
-          toggle = key === 84,
-          dim    = key === 190;
-
-      // if one of those is pressed decide what direction to go
-      if (left) {
-        e.preventDefault();
-        if (Slides.currentSlide === 0) return;
-        App.go('prev')
-        return
-      }
-      if (right) {
-        e.preventDefault();
-        if (Slides.currentSlide === Slides.lastSlide) return;
-        App.go('next')
-        return
-      }
-      if (home) {
-        e.preventDefault();
-        if(Slides.currentSlide === 0) return
-        App.go('first')
-        return
-      }
-      if (end) {
-        e.preventDefault();
-        if(Slides.currentSlide === Slides.lastSlide) return
-        App.go('last')
-        return
-      }
-      if (toggle) {
-        e.preventDefault();
-        Interface.toggle();
-        return
-      }
-      if (dim) {
-        e.preventDefault()
-        App.dim()
-      }
-    });
-  },
-
   /** add event listeners to document to handle events */
   addWindowListeners: function () {
     // add event and attach render method as callback
@@ -319,6 +237,12 @@ var Slides = {
     // hash string for the browser address. will get the current slide # after
     hash: 'slide',
 
+    // default animations for slide transition
+    transition: {
+      left: 'fly left',
+      right: 'fly right',
+    },
+
     // start with button toggled on or off
     showButtons: true,
 
@@ -349,7 +273,7 @@ var Slides = {
     /** INITIAL EVENTS */
 
     //  listen to key press events
-    !App.state.initialized ? App.onKeyPress() : null;
+    !App.state.initialized ? Interface.addKeyPressEvents() : null;
 
     // determine width of the canvas and set properties
     var width = Slides.getWindowWidth();
@@ -358,15 +282,17 @@ var Slides = {
     
     Slides.updateHash();
 
-    if (Slides.config.debug) {
-      console.info('--- Initial state ---');
-      console.log('App current state', App.state)
-      console.info('total slides to show: ' + (Slides.lastSlide + 1));
-      console.info('initial slide: ' + (Slides.currentSlide));
-      console.info('initial window width: ' + Slides.windowWidth);
-      console.info('initial slide width: ' + Slides.slideWidth);
-      console.info('initial translation: ' + Slides.translateAmount);
-    };
+    if (Slides.config.debug) Slides.debugger(0);
+  },
+
+  debugger: function (nextSlide) {
+    console.log('------ DEBUGGER ------')
+    console.log('App current state', App.state)
+    console.log('total slides: ' + (Slides.lastSlide + 1))
+    console.log('going to slide # ' + nextSlide)
+    console.log('window width: ' + Slides.windowWidth)
+    console.log('slide width: ' + Slides.slideWidth)
+    console.log('translation of: ' + Slides.translateAmount)
   },
 
   /** get the window dimensions */
@@ -381,7 +307,8 @@ var Slides = {
     return $('<div>', {
       id: hash + idx,
       // TODO: use semantic-ui transitions setting initial status
-      // class: idx > 0 ? 'transition hidden' : 'transition visible'
+      class: idx > 0 ? 'transition hidden' : 'transition visible',
+      style: idx === 0 ? 'display: -webkit-box !important;' : ''
     })[0]
   },
 
@@ -419,9 +346,6 @@ var Slides = {
 
       $.get(nextSlide)
       .fail(function (e) {
-        loadStatus = 'FAIL'
-        console.log('fail')
-
         /** error handling */
         handleError(e)
 
@@ -446,7 +370,6 @@ var Slides = {
         if (callback) setTimeout(callback, 50);
       })
       .success(function(data, status, xhr) {
-        console.log('success')
         /** success callback */
         $(bit).append($(data)[0]);
 
@@ -463,22 +386,11 @@ var Slides = {
   },
 
   /**
-   * set the margins of the slide, moving them in the correct position
-   * @param {[type]} width [description]
+   * Handles the (re)size of the slideshow content.
+   * Used at the beginning to set the spacing and every time that the window
+   * changes its size, to handle the new width of the view
+   * @param  {number} width new width of the container
    */
-  _setMargins: function () {
-    /** @var {array} all the slides */
-    var slides = Slides.container.children()
-    
-    // add add a left margin to accomodate the other slides
-    for (var i = 0; i < slides.length; i++) {
-      var slide  = $(slides[i]),
-          margin = Slides.slideWidth * i;
-
-      slide.css('margin-left', margin)
-    }
-  },
-
   _handleResize: function (width) {
     Slides.config.debug ? console.warn('Window width changed. handling') : null
 
@@ -486,7 +398,6 @@ var Slides = {
     Slides.slideWidth = width;
     Slides.windowWidth = width;
 
-    Slides._setMargins()
 
     /** if needed reset transition width to accomodate new window width */
     if (Slides.currentSlide > 0) {
@@ -498,30 +409,21 @@ var Slides = {
   },
 
   /** render and animate the slides, updating values if necessary */
-  render: function () {
+  render: function (prevSlide, nextSlide) {
     /** @type {number} current window width */
     var width  = Slides.getWindowWidth(),
     /** @type {bool} true if window changed size */
         resize = Slides.windowWidth !== width;
 
     /** if app is still initializing set initial margins */
-    if (!App.state.initialized) Slides._setMargins();
 
     // if (App.state.initialized && !resize) return;
     if (resize) Slides._handleResize(width);
 
     /** execute the animation for the slides */
-    setTimeout(Slides.animate, 0)
-  },
-
-  debugger: function (nextSlide) {
-    console.log('------ DEBUGGER ------')
-    console.log('App current state', App.state)
-    console.log('total slides: ' + (this.lastSlide + 1))
-    console.log('going to slide # ' + nextSlide)
-    console.log('window width: ' + this.windowWidth)
-    console.log('slide width: ' + this.slideWidth)
-    console.log('translation of: ' + this.translateAmount)
+    setTimeout(function () {
+      Slides.animate(prevSlide, nextSlide)
+    }, 0)
   },
 
   /////////////////////
@@ -536,6 +438,7 @@ var Slides = {
   onGo: function (direction) {
     /** local variables */
     var nextSlide,
+        previousSlide,
         currentSlide = Slides.currentSlide
 
     /**
@@ -545,6 +448,7 @@ var Slides = {
     switch (direction) {
       case 'next':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
         nextSlide = ++Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount -= Slides.slideWidth
@@ -552,6 +456,7 @@ var Slides = {
 
       case 'prev':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
         nextSlide = --Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount += Slides.slideWidth
@@ -559,6 +464,8 @@ var Slides = {
 
       case 'first':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
+        nextSlide = 0;
         Slides.currentSlide = 0;
         Slides.translateAmount = 0;
         Slides.onEnter(Slides.currentSlide)
@@ -566,6 +473,8 @@ var Slides = {
 
       case 'last':
         Slides.onLeave(currentSlide)
+        previousSlide = currentSlide
+        nextSlide = Slides.lastSlide
         Slides.currentSlide = Slides.lastSlide
         Slides.onEnter(Slides.currentSlide)
         Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
@@ -579,8 +488,7 @@ var Slides = {
     Slides.config.debug ? Slides.debugger(nextSlide) : null
     
     // execute the transition
-    Slides.render()
-
+    Slides.render(previousSlide, nextSlide)
   },
 
   onEnter: function (slide) {
@@ -615,16 +523,52 @@ var Slides = {
   /**
    *  handler for the animation to move the slides
    */
-  animate: function () {
-    var slides = Slides.container.children(),
-        value  = Slides.translateAmount;
+  animate: function (prevSlide, nextSlide) {
+    var slides      = Slides.container.children(),
+        value       = Slides.translateAmount,
+        hash        = Slides.config.hash;
+        prev        = '',
+        next        = '',
+        transition = {
+          enter: '',
+          leave: ''
+        };
+
+    /** get the dom elements corresponding the slides to animate */
+    if (typeof prevSlide === 'number') prev = $('#'+ hash + prevSlide);
+    if (typeof nextSlide === 'number') next = $('#'+ hash + nextSlide);
+
+    /** set the animations to use for the transition */
+    if (prevSlide > nextSlide) {
+      transition.leave = Slides.config.transition.left
+      transition.enter = Slides.config.transition.right
+    } else {
+      transition.leave = Slides.config.transition.right
+      transition.enter = Slides.config.transition.left
+    }
+
 
     // update DOM
+    if (prev) {
+      prev.transition({
+        animation: transition.leave,
+        // handle the event listeners
+        onStart: Interface.disableTransitions
+      })
+    }
+    if (next) {
+      next.transition({
+        animation: transition.enter,
+        // handle the event listeners
+        onComplete: Interface.restoreTransitions
+      })
+    }
+
     Slides.config.showCounter ? Counter.set() : null
 
     // apply the transition
-    slides.css('-webkit-transform', 'translateX(' + value + 'px)');
-    slides.css('transform', 'translateX(' + value + 'px)')
+    // slides.css('-webkit-transform', 'translateX(' + value + 'px)');
+    // slides.css('transform', 'translateX(' + value + 'px)')
 
     setTimeout(Slides.updateHash, 600)
   },
@@ -677,19 +621,113 @@ var Interface = {
 
   addEventListeners: function () {
     // click events for slides buttons
-    $button.first.on('click', function () { App.go('first') });
-    $button.prev.on('click', function () { App.go('prev') });
-    $button.next.on('click', function () { App.go('next') });
-    $button.last.on('click', function () { App.go('last') });
+    Interface.addNavigationListeners();
 
     // event for the toggler button
     $button.toggle.on('click', Interface.toggle);
+
+    // event for the black screen button
+    $button.black.on('click', function () { App.dim() });
+    // event handler for the dimmer click
+    $dimmer.on('click', function () { App.dim() })
 
     // custom events
     $(Interface).on('toggleUI', Interface.onToggleUI);
     $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
-  
+ 
+  /** add functionality to the navigational buttons */
+  addNavigationListeners: function () {
+    $button.first.on('click', function () { App.go('first') });
+    $button.prev.on('click', function () { App.go('prev') });
+    $button.next.on('click', function () { App.go('next') });
+    $button.last.on('click', function () { App.go('last') });
+  },
+
+  /** validate a keyCode from a keypress to handle navigation */
+  validateKeyPress: function (key) {
+    /**
+     * keycode shortcuts * legend
+     *
+     * right:     -> key, presenter right, SPACE
+     * left:      <- key, presenter left
+     * home:      HOME key
+     * end:       END key
+     * toggle:    T key 
+     * blackout:  "." (mark) key, presenter black screen
+     */
+    if (key === 39 || key === 34 || key === 32) return 'right';
+    if (key === 37 || key === 33) return 'left';
+    if (key === 36) return 'home';
+    if (key === 35) return 'end';
+    if (key === 84) return 'toggle';
+    if (key === 190) return 'dim';
+
+    return ''
+  },
+
+  /** handle a keypress in the page, when listeners are active */
+  handleKeyPress: function(e) {
+    var key = Interface.validateKeyPress(e.keyCode);
+
+    // if one of those is pressed decide what to do
+    switch (key) {
+      case 'left':
+        e.preventDefault();
+        if (Slides.currentSlide === 0) break;
+        App.go('prev')
+        break
+
+      case 'right':
+        e.preventDefault();
+        if (Slides.currentSlide === Slides.lastSlide) break;
+        App.go('next')
+        break
+
+      case 'home':
+        e.preventDefault();
+        if(Slides.currentSlide === 0) break
+        App.go('first')
+        break
+
+      case 'end':
+        e.preventDefault();
+        if(Slides.currentSlide === Slides.lastSlide) break
+        App.go('last')
+        break
+
+      case 'toggle':
+        e.preventDefault();
+        Interface.toggle();
+        break
+
+      case 'dim':
+        e.preventDefault()
+        App.dim()
+
+      default:
+        break
+    }
+  },
+
+  /** instantiate event listeners on key press */
+  addKeyPressEvents: function () {
+    $(document).keydown(Interface.handleKeyPress);
+  },
+
+  disableTransitions: function () {
+    $(document).unbind('keydown', Interface.handleKeyPress)
+    
+    $button.first.off('click');
+    $button.prev.off('click');
+    $button.next.off('click');
+    $button.last.off('click');
+  },
+  restoreTransitions: function () {
+    Interface.addKeyPressEvents()
+    Interface.addNavigationListeners()
+  },
+
   /** event triggers */
   toggleButtons: function () { $(Interface).trigger('setButtonsClass') },
   toggle: function () { $(Interface).trigger('toggleUI') },

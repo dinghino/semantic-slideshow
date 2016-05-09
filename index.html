@@ -9,168 +9,17 @@
     <link href="css/styles.css" rel="stylesheet">
   </head>
   <body>
-      <div data-role="dimmer" class="ui dimmer"></div>
+    <div data-role="dimmer" class="ui dimmer"></div>
     <div data-role="wrap">
       <div data-role="slides">
         <!-- slides go here -->
-        <div class="">
-          <div class="ui form tall piled segment" style="width: 320px">
-            <div class="ui basic segment">
-              <h3 class="ui blue header">
-                <i class="circular blue inverted info icon"></i>
-              <div class="content">
-                <div class="header">Find your slideshow</div>
-                <div class="sub header">set folder and number of slides</div>
-              </div>
-              </h3>
-            </div>
-            <div class="ui basic segment">
-              <div class="field">
-                <div class="ui left icon right labeled input">
-                  <i class="folder icon"></i>
-                  <input type="text" name="folderName" placeholder="folder name" value="slideshow">
-                  <div class="ui blue inverted label">folder</div>
-                </div>
-              </div>
-              <div class="field">
-                <div class="ui left icon right labeled input">
-                  <i class="code icon"></i>
-                  <input type="text" name="pageHash" placeholder="address hash" value="slide">
-                  <div class="ui blue inverted label">#hash</div>
-                </div>
-              </div>
-            </div>
-            <div class="ui horizontal divider"><i class="setting icon"></i>settings</div>
-            <div class="ui center aligned basic segment">
-              <div class="inline field">
-                <div class="ui toggle checkbox">
-                  <input name="counterToggle" type="checkbox" checked tabindex="0" class="hidden">
-                  <label>Show counter</label>
-                </div>
-              </div>
-              <div class="inline field">
-                <div class="ui toggle checkbox">
-                  <input name="controlsToggle" type="checkbox" checked tabindex="0" class="hidden">
-                  <label>Open controls</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="ui basic blue center aligned segment">
-              <div id="testInit" class="ui large primary right labeled icon button">
-                <i class="send icon"></i>
-                Load slideshow
-              </div>
-            </div>
-          </div> <!-- close segments -->
-      </div>
-    </div> <!-- close wrap -->
-    <!-- help icon and popup are here -->
-    <button data-role="helpIcon" class="ui basic compact active icon button">
-      <i class="help link icon"></i>
-     </button>
-    <div class="ui help inverted popup">
-      <h6 class="ui tiny inverted header">
-        <i class="help icon"></i>
-        <div class="content">
-          <div class="header">Controls</div>
-          <div class="sub header">keyboard shortcuts</div>
-        </div>
-      </h6>
-      <div class="ui tiny relaxed inverted list">
-        <div class="item">
-          <i class="tiny middle aligned reply icon"></i>
-          <div class="content">
-            <div class="header">Go to first</div>
-            <div class="tiny description"><strong>HOME</strong> key</div>
-          </div>
-        </div>
-        <div class="item">
-          <i class="tiny middle aligned left arrow icon"></i>
-          <div class="content">
-            <div class="header">Go to previous</div>
-            <div class="tiny description"><strong>LEFT Arrow</strong> key</div>
-          </div>
-        </div>
-        <div class="item">
-          <i class="tiny middle aligned right arrow icon"></i>
-          <div class="content">
-            <div class="header">Go to next</div>
-            <div class="tiny description"><strong>RIGHT Arrow</strong> or <strong>SPACE</strong> key</div>
-          </div>
-        </div>
-        <div class="item">
-          <i class="tiny middle aligned share icon"></i>
-          <div class="content">
-            <div class="header">Go to last</div>
-            <div class="tiny description"><strong>END</strong> key</div>
-          </div>
-        </div>
-        <div class="item">
-          <i class="tiny middle aligned sidebar icon"></i>
-          <div class="content">
-            <div class="header">Toggle UI</div>
-            <div class="tiny description"><strong>T</strong> key</div>
-          </div>
-        </div>
-      </div>
-      <div data-role="authorAccordion" class="ui accordion">
-        <h5 class="ui title tiny inverted header">
-          <i class="smile icon"></i>
-          <div class="content">
-          <i class="dropdown icon"></i>
-            About
-          </div>
-        </h5>
-        <div class="content">
-          <div class="ui tiny relaxed inverted list">
-            <div class="version item">
-              <i class="middle aligned info icon"></i>
-              <div class="content">
-                <div class="header">version</div>
-                <div data-role="appVersion" class="description">v.0.1A</div>
-              </div>
-            </div>
-            <a data-role="authorEmail" class="item">
-              <i class="middle aligned mail outline link icon"></i>
-              <div class="content">
-                Contact & feedback
-               </div>
-            </a>
-            <a data-role="authorGitHub" class="item" href="https://github.com/dinghino" target="_blank">
-              <i class="middle aligned github square link icon"></i>
-              <div class="content">
-                GitHub profile
-               </div>
-            </a>
-          </div>
-        </div>
       </div>
     </div>
-    <!-- slides counter goes here -->
-    <div data-role="counter" class="transition hidden"></div>
-    <!-- action buttons are here -->
-    <div data-role="buttons" class="ui compact basic buttons transition hidden">
-      <button data-role="btnFirst" class="ui icon button active">
-        <i class="reply icon"></i>
-      </button>
-      <button data-role="btnPrev" class="ui grey icon button active">
-        <i class="left arrow icon"></i>
-      </button>
-      <button data-role="btnNext" class="ui grey right icon button active">
-        <i class="right arrow icon"></i>
-      </button>
-      <button data-role="btnLast" class="ui icon button active">
-        <i class="share icon"></i>
-      </button>
+    <div data-role="ui">
+      <!-- container for the UI -->
     </div>
-    <!-- actions toggler -->
-    <button data-role="toggle" class="ui basic compact active icon button">
-      <i class="sidebar icon"></i>
-    </button>
   </body>
 
   <!-- app is loaded here -->
-  <script src="js/app.js"></script>
   <script src="js/main.js"></script>
 </html>
