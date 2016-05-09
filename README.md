@@ -1,7 +1,7 @@
 > #Preface
-> Project is still REALLY work in progress, so the readme may not mirror the actual code, functionalities etc... I Will try to keep it updated as soon as I can, but for now it would require me to work on it on every push.
+> Project is still work in progress, so this readme **DO NOT** mirror the actual code, functionalities etc... For example there is no need for manual configuration anymore. I'll leave it there but as far as this version all (basic) functionalities can be easily handled from the UI.
 
-> ## Last update to v. 0.8a
+> ## Last update to v. 0.9.3b
 
 # Simple slide presentational app
 
