@@ -26,7 +26,7 @@
   _slidesEvents = {
     0: {
       onEnter: function () {
-        console.log('entering slide 0')
+        // console.log('entering slide 0')
           /**
            * hook is called in the first load too, so it can activate stuff
            */
@@ -37,11 +37,11 @@
       onLeave: function () {
         /** removing the button looping */
         $s1Btn.transition('remove looping')
-        console.log('exiting slide 0')
+        // console.log('exiting slide 0')
       },
     },
     1: {
-      onEnter: function () { console.log('entering slide 1') },
+      // onEnter: function () { console.log('entering slide 1') },
       onLeave: "I'm not a function so I don't count :(",
     }
   };
