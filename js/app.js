@@ -10,6 +10,7 @@ var App = {
     gitHub: 'https://github.com/dinghino',
     version: '0.9.3b'
   },
+  _prevStates: [{ ready: true }] ,
   // current state of the app
   state : {
     /** @property {boolean} UI is toggled */
@@ -19,8 +20,42 @@ var App = {
     /** @property {boolean} true if custom events are present and ready */
     events: false,
     /** @property {string} status of the dimmer. uses semantic dimmer options */
-    dimmer: 'hide'
+    dimmer: 'hide',
+    /** @type {Number} total number of slides */
+    totalSlide: 0,
+    /** @property {number} currently shown slide */
+    currentSlide: 0,
+    /** @type {number} previously shown slide ~ used and set in transitions */
+    prevSlide: undefined,
+    /** @type {number} next slide to show ~ used and set in transitions */
+    nextSlide: undefined
   },
+
+  setState: function (nextState) {
+    // validation for arguments
+    if (typeof nextState !== 'object') {
+      throw new Error('new state should be an object!')
+    };
+
+    var oldState = App.state,
+    /** @type {object} merge the old state with the new props passed */
+        newState = Object.assign(App.state, nextState);
+
+    /** DEBUG: TODO: remove once satifsied */
+    console.warn('=========== updating App.state object ===========')
+    console.info('old state', oldState)
+    console.info('updating with', nextState)
+    console.info('new state', newState)
+
+    /** add last state as first of _prevStates */
+    App._prevStates.unshift(oldState)
+    /** if length of array is > 10, remove oldest one */
+    if(App._prevStates.length > 10) { App._prevStates.pop() }
+
+    /** update current state with the new object */
+    App.state = newState
+  },
+
   __logState: function () { console.log( App.state )},
   init: function (config, info) {
     /** EVENT LISTENERS */
@@ -109,7 +144,8 @@ var App = {
 
       // call the onEnter event for the first slide after loading
       Slides.onEnter(Slides.currentSlide)
-      App.state.initialized = true
+      App.setState({ initialized: true })
+      // App.state.initialized = true
     })
     .on('renderSlides', function (e, prevSlide, nextSlide) {
       Slides.render(prevSlide, nextSlide)
@@ -462,6 +498,10 @@ var Slides = {
         nextSlide = ++Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount -= Slides.slideWidth
+        App.setState({
+          prevSlide: previousSlide,
+          nextSlide: nextSlide
+        })
         break
 
       case 'prev':
@@ -470,6 +510,10 @@ var Slides = {
         nextSlide = --Slides.currentSlide
         Slides.onEnter(nextSlide)
         Slides.translateAmount += Slides.slideWidth
+        App.setState({
+          prevSlide: previousSlide,
+          nextSlide: nextSlide
+        })
         break
 
       case 'first':
@@ -479,6 +523,10 @@ var Slides = {
         Slides.currentSlide = 0;
         Slides.translateAmount = 0;
         Slides.onEnter(Slides.currentSlide)
+        App.setState({
+          prevSlide: previousSlide,
+          nextSlide: nextSlide
+        })
         break
 
       case 'last':
@@ -488,6 +536,10 @@ var Slides = {
         Slides.currentSlide = Slides.lastSlide
         Slides.onEnter(Slides.currentSlide)
         Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
+        App.setState({
+          prevSlide: previousSlide,
+          nextSlide: nextSlide
+        })
         break
 
       default:
@@ -574,6 +626,8 @@ var Slides = {
       })
     }
 
+    App.setState({currentSlide: nextSlide, prevSlide: prevSlide })
+
     Slides.config.showCounter ? Counter.set() : null
 
     setTimeout(Slides.updateHash, 100)
@@ -619,29 +673,36 @@ var Dimmer = {
   set: function (status) { $(Dimmer).trigger('dimmer_set', [status]) },
 
   /** event handlers */
-  events: function () {
-    $(Dimmer).on('dimmer_toggle', function (e) { $dimmer.dimmer('toggle') }),
-    $(Dimmer).on('dimmer_set', function (e, status) {
-      Dimmer.activate(status);
-    });
+  init: function () {
+    $(Dimmer).on('dimmer_toggle', Dimmer._toggleState);
+
+    $(Dimmer).on('dimmer_set', { status: status }, Dimmer._changeState);
   },
 
-  activate: function (status) {
+  _toggleState: function (e) {
+    $dimmer.dimmer('toggle')
+    var newState = App.state.dimmer === 'show' ? 'hide' : 'show'
+    App.setState({ dimmer: newState })
+  },
+
+  _changeState: function (e, data) {
       var currentState  = App.state.dimmer,
           // status = e.data.status
-          isValid = Dimmer.validate(status);
+          isValid = Dimmer.validate(data.status);
 
       if (typeof isValid === 'object') { console.error(isValid) }
       if (isValid !== true) { console.warn('error in validation?', isValid); return }
 
-      if (!status) {
+      if (!data.status) {
         Dimmer.toggle()
-        App.state.dimmer = currentState === 'show' ? 'hide' : 'show'
+        App.setState({
+          dimmer: currentState === 'show' ? 'hide' : 'show'
+        })
         return
       };
 
-      $dimmer.dimmer(status)
-      App.state.dimmer = status;
+      $dimmer.dimmer(data.status)
+      App.setState({ dimmer: data.status });
   },
 
   /**
@@ -692,7 +753,7 @@ var Interface = {
   init: function (hide) {
     if(hide) Slides.config.showButtons = false
     Interface.addEventListeners()
-    Dimmer.events()
+    Dimmer.init()
   },
 
   addEventListeners: function () {
