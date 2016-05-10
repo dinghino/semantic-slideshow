@@ -42,10 +42,12 @@ var App = {
         newState = Object.assign(App.state, nextState);
 
     /** DEBUG: TODO: remove once satifsied */
-    console.warn('=========== updating App.state object ===========')
-    console.info('old state', oldState)
-    console.info('updating with', nextState)
-    console.info('new state', newState)
+    if (App.verbose) {
+      console.warn('=========== updating App.state object ===========')
+      console.info('old state', oldState)
+      console.info('updating with', nextState)
+      console.info('new state', newState)
+    }
 
     /** add last state as first of _prevStates */
     App._prevStates.unshift(oldState)
@@ -59,8 +61,7 @@ var App = {
   __logState: function () { console.log( App.state )},
   init: function (config, info) {
     /** EVENT LISTENERS */
-    // listen to window resize to handle slide dimensions and translation
-    App.addWindowListeners()
+
     // custom events for the application
     App.events()
     /** APPLY SETTINGS AND INFO */
@@ -70,7 +71,7 @@ var App = {
     /** COMPONENTS INITIALIZATION */
 
     // initialize interface with semantic-ui modules
-    App.semanticModules()
+    App.enableSemanticModules()
     // initialize the buttons and their events
     Interface.init()
   },
@@ -94,89 +95,16 @@ var App = {
     .fail(function () {
         console.warn('failure in accessing', folderName + '/');
         if (failure) failure();
-      })
-
-  },
-
-  events: function () {
-    $(App)
-    .on('setConfig', function (e, config) {
-      // assigning configuration to app
-      Slides.config = Object.assign(Slides.config, config)
-    })
-    .on('loadSlides', function (e, config) {
-      // initializing slideshow
-      App.updateConfig(config)
-      Slides.init()
-    })
-    .on('slideShowReady', function (e) {
-      // if custom events are present in config and not yet executed run that
-      // first before finalizing initialization
-      if(Slides.config.events && !App.state.events) {
-        Slides.config.debug ? console.info('enabling your custom events') : null
-        App.enableEvents()
-        return
-      // if no extra events are presents or are already set, finalize init
-      } else {
-        Slides.config.debug ? console.info('finalizing initialization') : null
-        App.finalizeApp()
-      };
-    })
-    .on('finalizeAppInit', function (e) {
-      // if app is already initialized warn the user
-      if (App.state.initialized === true) {
-        console.warn('initialization called more than once. check it!')
-        return
       }
-
-      Slides.config.debug ? console.info('I\'m done! Slideshow is ready'): null
-      
-
-      // set initial state for the buttons
-      // if necessary do stuff to the UI
-      if (Slides.config.showCounter && !App.state.initialized) Counter.init();
-      if (Slides.config.showButtons && !App.state.initialized) {
-        setTimeout(Interface.toggle, 250);
-      };
-
-      // remove the dimmer
-      setTimeout(function () { Dimmer.set('hide')}, 150)
-
-      // call the onEnter event for the first slide after loading
-      Slides.onEnter(Slides.currentSlide)
-      App.setState({ initialized: true })
-      // App.state.initialized = true
-    })
-    .on('renderSlides', function (e, prevSlide, nextSlide) {
-      Slides.render(prevSlide, nextSlide)
-    })
-    .on('moveTo', function (e, nextPosition) {
-      // move to a direction
-      Slides.onGo(nextPosition)
-      Interface.toggleButtons()
-    })
-    .on('enableCustomEvents', function (e) {
-      Slides.config.events = window._slidesEvents
-      var events = Slides.config.events
-      // if events exists and is  function execute.
-      // timeout is needed for the DOM creation
-      events && typeof events === 'function' ? setTimeout(events, 50) : null
-      
-      // set events as executed
-      App.state.events = true
-      // run init validation again
-      App.slidesReady()
-    })
+    )
   },
 
   /**
    * event triggers
    */
+
   /** load a slideshow with the given total slides and configuration */
-  loadSlideshow: function (config) {
-    // trigger the loading of the slideshows
-    $(App).trigger('loadSlides', [config])
-  },
+  loadSlideshow: function (config) { $(App).trigger('loadSlides', [config]) },
   /** update Slides.config object with custom config */
   updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
   /** get the custom script file from the slideshow folder 
@@ -210,6 +138,97 @@ var App = {
   /** rerender the slides and content, adjusting to window resize */
   render: function () { $(App).trigger('renderSlides') },
 
+  /**
+   * event listeners
+   */
+
+  events: function () {
+    $(App)
+    .on('setConfig', App._onSetConfig)
+    .on('loadSlides', App._onLoadSlides)
+    .on('slideShowReady', App._onSlideShowReady)
+    .on('finalizeAppInit', App._onFinalizeInit)
+    .on('renderSlides', App._onRenderSlides)
+    .on('moveTo', App._onMoveTo)
+    .on('enableCustomEvents', App._onEnableEvents)
+  },
+
+  /**
+   * event handlers
+   */
+
+  _onLoadSlides: function (e, config) {
+    // initia lizing slideshow
+    App.updateConfig(config)
+    Slides.init()
+  },
+  _onSetConfig: function (e, config) {
+    // assigning configuration to app
+    Slides.config = Object.assign(Slides.config, config)
+  },
+  _onSlideShowReady: function (e) {
+    Interface.toggleButtons()
+    // if custom events are present in config and not yet executed run that
+    // first before finalizing initialization
+    if(Slides.config.events && !App.state.events) {
+      Slides.config.debug ? console.info('enabling your custom events') : null
+      App.enableEvents()
+      return
+    // if no extra events are presents or are already set, finalize init
+    } else {
+      Slides.config.debug ? console.info('finalizing initialization') : null
+      App.finalizeApp()
+    };
+  },
+  _onFinalizeInit: function (e) {
+    // if app is already initialized warn the user
+    if (App.state.initialized === true) {
+      console.warn('initialization called more than once. check it!')
+      return
+    }
+
+    Slides.config.debug ? console.info('I\'m done! Slideshow is ready'): null
+    
+
+    // set initial state for the buttons
+    // if necessary do stuff to the UI
+    if (Slides.config.showCounter && !App.state.initialized) Counter.init();
+    if (Slides.config.showButtons && !App.state.initialized) {
+      setTimeout(Interface.toggle, 250);
+    };
+
+    // remove the dimmer
+    setTimeout(function () { Dimmer.set('hide')}, 150)
+
+    // call the onEnter event for the first slide after loading
+    Slides.onEnter(Slides.currentSlide)
+    App.setState({ initialized: true })
+    // App.state.initialized = true
+  },
+  _onRenderSlides: function (e, pS, nS) { Slides.render(pS, nS) },
+  _onMoveTo: function (e, nextPosition) {
+    // move to a direction
+    Slides.evaluateTransition(nextPosition)
+    Slides.requestTransition()
+  },
+  _onEnableEvents: function (e) {
+    console.log('activating events')
+    Slides.config.events = window._slidesEvents
+    var events = Slides.config.events
+    // if events exists and is  function execute.
+    // timeout is needed for the DOM creation
+    events && typeof events === 'function' ? setTimeout(events, 50) : null
+    
+    // set events as executed
+    App.setState({ events: true })
+    // run init validation again
+    App.slidesReady()
+  },
+
+  /**
+   * utility methods
+   */
+
   /** get the about info and set them into the page */
   setAboutInfo: function () {
     var info = App.info
@@ -222,7 +241,7 @@ var App = {
   },
 
   /** Activate slideshow UI semantic-ui modules */
-  semanticModules: function () {
+  enableSemanticModules: function () {
     $helpIcon.popup({
       inline: true,
       position: 'top left',
@@ -241,12 +260,6 @@ var App = {
         }
       })
   },
-
-  /** add event listeners to document to handle events */
-  addWindowListeners: function () {
-    // add event and attach render method as callback
-    window.addEventListener('resize', App.render);
-  }
 };
 
 /**
@@ -431,45 +444,11 @@ var Slides = {
     ajaxCall()
   },
 
-  /**
-   * Handles the (re)size of the slideshow content.
-   * Used at the beginning to set the spacing and every time that the window
-   * changes its size, to handle the new width of the view
-   * @param  {number} width new width of the container
-   */
-  _handleResize: function (width) {
-    Slides.config.debug ? console.warn('Window width changed. handling') : null
-
-    /** store the new width into Slides properties */
-    Slides.slideWidth = width;
-    Slides.windowWidth = width;
-
-
-    /** if needed reset transition width to accomodate new window width */
-    if (Slides.currentSlide > 0) {
-      var width   = Slides.slideWidth,
-          current = Slides.currentSlide;
-      /** update the translateAmount for the transition */
-      Slides.translateAmount = -(width * current)
-    }
-  },
-
   /** render and animate the slides, updating values if necessary */
   render: function (prevSlide, nextSlide) {
-    /** @type {number} current window width */
-    var width  = Slides.getWindowWidth(),
-    /** @type {bool} true if window changed size */
-        resize = Slides.windowWidth !== width;
-
-    /** if app is still initializing set initial margins */
-
-    // if (App.state.initialized && !resize) return;
-    if (resize) Slides._handleResize(width);
 
     /** execute the animation for the slides */
-    setTimeout(function () {
-      Slides.animate(prevSlide, nextSlide)
-    }, 0)
+    setTimeout(function () { Slides.animate(prevSlide, nextSlide) }, 0)
   },
 
   /////////////////////
@@ -477,11 +456,11 @@ var Slides = {
   /////////////////////
 
   /**
-   * move the slides to {direction}.
+   * evaluate transition if moving to {direction} and store into App.state
    * @param {string} direction the direction to move. 
    *                 one of 'next', 'prev', 'first', 'last'
    */
-  onGo: function (direction) {
+  evaluateTransition: function (direction) {
     /** local variables */
     var nextSlide,
         previousSlide,
@@ -545,12 +524,14 @@ var Slides = {
       default:
         throw new Error('Error while moving... what did you do? You nasty...')
     }
+  },
 
+  requestTransition: function () {
     // be verbose if debug is true
     Slides.config.debug ? Slides.debugger(nextSlide) : null
     
     // execute the transition
-    Slides.render(previousSlide, nextSlide)
+    Slides.render(App.state.prevSlide, App.state.nextSlide)
   },
 
   onEnter: function (slide) {
@@ -625,7 +606,7 @@ var Slides = {
         onComplete: Interface.restoreTransitions
       })
     }
-
+    Interface.toggleButtons()
     App.setState({currentSlide: nextSlide, prevSlide: prevSlide })
 
     Slides.config.showCounter ? Counter.set() : null
@@ -644,7 +625,6 @@ var Slides = {
     location.hash = hash + slide
   }
 };
-
 
 var Counter = {
   init: function () {
@@ -672,13 +652,14 @@ var Dimmer = {
   toggle: function () { $(Dimmer).trigger('dimmer_toggle') },
   set: function (status) { $(Dimmer).trigger('dimmer_set', [status]) },
 
-  /** event handlers */
+  /** add event listeners */
   init: function () {
-    $(Dimmer).on('dimmer_toggle', Dimmer._toggleState);
-
-    $(Dimmer).on('dimmer_set', { status: status }, Dimmer._changeState);
+    $(Dimmer)
+    .on('dimmer_toggle', Dimmer._toggleState)
+    .on('dimmer_set', { status: status }, Dimmer._changeState);
   },
 
+  /** event handlers */
   _toggleState: function (e) {
     $dimmer.dimmer('toggle')
     var newState = App.state.dimmer === 'show' ? 'hide' : 'show'
@@ -704,6 +685,8 @@ var Dimmer = {
       $dimmer.dimmer(data.status)
       App.setState({ dimmer: data.status });
   },
+
+  /** utility methods */
 
   /**
    * Validate the dimmer transitions. true or an error if validation is falsy
@@ -764,9 +747,9 @@ var Interface = {
     $button.toggle.on('click', Interface.toggle);
 
     // event for the black screen button
-    $button.black.on('click', function () { Dimmer.toggle() });
+    $button.black.on('click', Dimmer.toggle);
     // event handler for the dimmer click
-    $dimmer.on('click', function () { Dimmer.toggle() })
+    $dimmer.on('click', Dimmer.toggle)
 
     // custom events
     $(Interface).on('toggleUI', Interface.onToggleUI);

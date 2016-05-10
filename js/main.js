@@ -46,6 +46,10 @@
             $.getScript('js/app.js', function () {
             // initialize the app
             App.init();
+            // enable log for App.state changes
+            // used for debugging App.setState() functionality
+            // TODO: remove once satisfied
+            App.verbose = false
             })
           });
         });
