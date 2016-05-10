@@ -22,7 +22,7 @@ var App = {
     /** @property {string} status of the dimmer. uses semantic dimmer options */
     dimmer: 'hide',
     /** @type {Number} total number of slides */
-    totalSlide: 0,
+    totalSlides: 0,
     /** @property {number} currently shown slide */
     currentSlide: 0,
     /** @type {number} previously shown slide ~ used and set in transitions */
@@ -189,7 +189,6 @@ var App = {
 
     Slides.config.debug ? console.info('I\'m done! Slideshow is ready'): null
     
-
     // set initial state for the buttons
     // if necessary do stuff to the UI
     if (Slides.config.showCounter && !App.state.initialized) Counter.init();
@@ -202,8 +201,8 @@ var App = {
 
     // call the onEnter event for the first slide after loading
     Slides.onEnter(Slides.currentSlide)
+
     App.setState({ initialized: true })
-    // App.state.initialized = true
   },
   _onRenderSlides: function (e, pS, nS) { Slides.render(pS, nS) },
   _onMoveTo: function (e, nextPosition) {
@@ -276,15 +275,6 @@ var Slides = {
   // {number} current slide shown
   currentSlide: 0,
 
-  // {number} width of the slides
-  slideWidth: 0,
-
-  // {number} current size of the window
-  windowWidth: 0,
-
-  // {number} current position on the slides
-  translateAmount: 0,
-
   // {element} DOM Element that will contain our slides
   container: $slideContainer,
 
@@ -318,27 +308,23 @@ var Slides = {
   init: function () {
     /** INITIALIZATION */
 
-    // empty the slide container
+    /** toggle the dimmer to 'show', hiding content loading */
     Dimmer.set('show')
-    App.state.initialized = false;
+
+    /** reset app initialization to false if needed */
+    App.state.initialized === true ? App.setState({ initialized: false}) : null;
+    
+    /** empty the slide container */
     Slides.container.empty();
-    
-    Slides.windowWidth = 0;
-    Slides.slideWidth = 0;
-    
+
     /** START LOADING */
     Slides.getContent(App.fetchEvents)
 
     /** INITIAL EVENTS */
 
-    //  listen to key press events
-    !App.state.initialized ? Interface.addKeyPressEvents() : null;
+    /**  listen to key press events */
+    Interface.addKeyPressEvents();
 
-    // determine width of the canvas and set properties
-    var width = Slides.getWindowWidth();
-    Slides.slideWidth = width;
-    Slides.windowWidth = width;
-    
     Slides.updateHash();
 
     if (Slides.config.debug) Slides.debugger(0);
@@ -352,12 +338,6 @@ var Slides = {
     console.log('window width: ' + Slides.windowWidth)
     console.log('slide width: ' + Slides.slideWidth)
     console.log('translation of: ' + Slides.translateAmount)
-  },
-
-  /** get the window dimensions */
-  getWindowWidth: function () {
-    var width = $(window).width() 
-    return width
   },
 
   _createSlide: function (idx)  {
@@ -386,13 +366,13 @@ var Slides = {
     /** handle the error from the ajax call in case it fails */
     function handleError (e) {
       if (e.status == 0) {
-        console.warn(' Check Your Network.');
+        return ' Check Your Network.';
       } else if (e.status == 404) {
-        console.warn('Seems we loaded the last slide. You have', slidesQty, 'slides');
+        console.warn('Seems we loaded the last slide. You have ', slidesQty, 'slides');
       } else if (e.status == 500) {
-        console.warn('Internel Server Error.'); 
+        return 'Internel Server Error.';
       } else {
-        console.warn('Unknow Error.\n' + e.responseText);
+        return 'Unknow Error.\n' + e.responseText;
       }
     };
 
@@ -406,7 +386,8 @@ var Slides = {
       $.get(nextSlide)
       .fail(function (e) {
         /** error handling */
-        handleError(e)
+        var error = handleError(e)
+        if (error) { throw new Error(error) }
 
         /**
          * Since fail means that there are no more slides to load, 
@@ -414,6 +395,7 @@ var Slides = {
          */
         
         /** save slide quantity in Slides.lastSlide */
+        App.setState({ totalSlides: slidesQty })
         Slides.lastSlide = --slidesQty
 
         // append the fragments to the DOM into this.config.container
@@ -422,9 +404,6 @@ var Slides = {
         // debug stuff
         Slides.config.debug ? console.info('All slides loaded. continuing') : null
         
-        // set initial slide widths, applying left-margin to compensate
-        setTimeout(App.render, 50);
-
         // execute callback function. Should be Slides.config.events
         if (callback) setTimeout(callback, 50);
       })
@@ -628,16 +607,50 @@ var Slides = {
 
 var Counter = {
   init: function () {
-    $counter.append('<div class="ui left pointing grey basic label"></div>')
+    /** @type {node} create label into the DOM and return the element */
+    label = Counter.create()
+
+    /** add the label to the $button object to be easily used */
+    $button.jump = $(label)
+    
+    /** activate the onClick event */
+    $(label).on('click', function (e) {
+      e.preventDefault()
+      // temporary assignment until jump functionality is implemented
+      console.info('clicked the counter! Jump functionality coming soon!')
+    })
+    
+    /** set counter initial state */
     Counter.set()
   },
+
+  create: function () {
+    /** create counter elements */
+    var label = $('<a>', {
+      class:'ui left pointing grey basic label',
+      'data-role': 'jumpToSlide' 
+    })
+    var labelIcon = $('<i>', { class: 'slack icon' })
+    var labelText = $('<span>', { class: 'labelText'})
+
+    /** append elements to the DOM inside the counter container */
+    $counter.append(label)
+    $(label).append(labelIcon).append(labelText)
+
+    /** return the label element */
+    return label
+  },
+
   /** set the value of the label if present */
   set: function () {
-    var current = Slides.currentSlide + 1,
-        total   = Slides.lastSlide + 1,
-        text    = 'Slide ' + current + ' of ' + total,
-        $label  = $counter.find('.label');
+    var current = parseInt(App.state.currentSlide, 10) + 1,
+        total   = parseInt(App.state.totalSlides, 10),
+        /** @type {string}  label text */
+        text    = current + ' of ' + total,
+        /** @type {node} DOM element for the label text */
+        $label  = $counter.find('.labelText');
 
+    /** update the label value */
     $($label[0]).text(text)
   },
   toggle: function () {
@@ -740,18 +753,17 @@ var Interface = {
   },
 
   addEventListeners: function () {
-    // click events for slides buttons
+    /** click events for slides buttons */
     Interface.addNavigationListeners();
 
-    // event for the toggler button
+    /** event for the toggler button */
     $button.toggle.on('click', Interface.toggle);
-
-    // event for the black screen button
+    /** event for the black screen button */
     $button.black.on('click', Dimmer.toggle);
-    // event handler for the dimmer click
+    /** event handler for the dimmer click */
     $dimmer.on('click', Dimmer.toggle)
 
-    // custom events
+    /** custom events */
     $(Interface).on('toggleUI', Interface.onToggleUI);
     $(Interface).on('setButtonsClass', Interface.onToggleButtons);
   },
@@ -790,7 +802,7 @@ var Interface = {
   handleKeyPress: function(e) {
     var key = Interface.validateKeyPress(e.keyCode);
 
-    // if one of those is pressed decide what to do
+    /** if one of those is true decide what to do */
     switch (key) {
       case 'left':
         e.preventDefault();
@@ -915,6 +927,6 @@ var Interface = {
     Slides.config.debug ? console.log('App current state', App.state) : null;
     $button.wrapper.transition('fly left');
     Counter.toggle();
-    App.state.buttonShown = !state;
+    App.setState({ buttonShown: !state })
   }
 };
