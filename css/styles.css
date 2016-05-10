@@ -15,7 +15,7 @@ body {
   overflow: hidden; /* because children will be floated */
 }
 [data-role="dimmer"] {
-  background: rgba(0, 0, 0, 1)!important;
+  background: rgba(0, 0, 0, 0.95)!important;
 }
 [data-role="helpIcon"] {
   position: fixed;
