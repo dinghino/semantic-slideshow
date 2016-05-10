@@ -8,7 +8,11 @@ var App = {
     author: 'Daniele Calcinai',
     email: 'dinghino@gmail.com',
     gitHub: 'https://github.com/dinghino',
-    version: '0.9.3b'
+    version: '0.9.4'
+  },
+  config: {
+    /** {boolean} console log events */
+    verbose: false
   },
   _prevStates: [{ ready: true }] ,
   // current state of the app
@@ -59,20 +63,27 @@ var App = {
   },
 
   __logState: function () { console.log( App.state )},
-  init: function (config, info) {
-    /** EVENT LISTENERS */
+  /**
+   * Initialize the whole app, starting sub .init() method, activating event
+   * listeners and setting default parameters here and there
+   * @param  {object} config configuration object for the app
+   * @return {[type]}        [description]
+   */
+  init: function (config) {
+    /** merge custom config for the whole app. used primarly to toggle debugging */
+    if (config) {
+      console.info('custom global config detected! merging', config)
+      App.config = Object.assign(App.config, config)
+    };
 
-    // custom events for the application
+    /** enable semantic-ui debugger if verbose is true */
+    if (App.config.verbose) $.site('enable debug');
+
+    /** add custom app event listeners to objects and DOM */
     App.events()
-    /** APPLY SETTINGS AND INFO */
-    // set the about section content
+    /** set the about section content */
     App.setAboutInfo()
-    
-    /** COMPONENTS INITIALIZATION */
-
-    // initialize interface with semantic-ui modules
-    App.enableSemanticModules()
-    // initialize the buttons and their events
+    /** initialize the buttons and their events */
     Interface.init()
   },
 
@@ -106,13 +117,17 @@ var App = {
   /** load a slideshow with the given total slides and configuration */
   loadSlideshow: function (config) { $(App).trigger('loadSlides', [config]) },
   /** update Slides.config object with custom config */
-  updateConfig: function (config) {$(App).trigger('setConfig', [config]) },
+  updateConfig: function (config) {$(App).trigger('setSlideConfig', [config]) },
   /** get the custom script file from the slideshow folder 
    * @param  {string} fileName will be used in a later release,
    *                           allowing custom names for script.js
    */
   fetchEvents: function (fileName) {
     if (!fileName) fileName = 'script'
+
+    if (!Slides.config.getEvents) {
+      return App.slidesReady()
+    }
     var path = Slides.config.folder + '/' + fileName + '.js'
 
     $.getScript(path)
@@ -135,8 +150,6 @@ var App = {
   finalizeApp: function () { $(App).trigger('finalizeAppInit') },
   /**  move the slides */
   go: function (direction) { $(App).trigger('moveTo', [direction]) },
-  /** rerender the slides and content, adjusting to window resize */
-  render: function () { $(App).trigger('renderSlides') },
 
   /**
    * event listeners
@@ -144,11 +157,10 @@ var App = {
 
   events: function () {
     $(App)
-    .on('setConfig', App._onSetConfig)
+    .on('setSlideConfig', App._onSetConfig)
     .on('loadSlides', App._onLoadSlides)
     .on('slideShowReady', App._onSlideShowReady)
     .on('finalizeAppInit', App._onFinalizeInit)
-    .on('renderSlides', App._onRenderSlides)
     .on('moveTo', App._onMoveTo)
     .on('enableCustomEvents', App._onEnableEvents)
   },
@@ -171,14 +183,10 @@ var App = {
     // if custom events are present in config and not yet executed run that
     // first before finalizing initialization
     if(Slides.config.events && !App.state.events) {
-      Slides.config.debug ? console.info('enabling your custom events') : null
       App.enableEvents()
       return
     // if no extra events are presents or are already set, finalize init
-    } else {
-      Slides.config.debug ? console.info('finalizing initialization') : null
-      App.finalizeApp()
-    };
+    } else { App.finalizeApp() };
   },
   _onFinalizeInit: function (e) {
     // if app is already initialized warn the user
@@ -187,9 +195,7 @@ var App = {
       return
     }
 
-    Slides.config.debug ? console.info('I\'m done! Slideshow is ready'): null
-    
-    // set initial state for the buttons
+    // set initial state for the buttons.
     // if necessary do stuff to the UI
     if (Slides.config.showCounter && !App.state.initialized) Counter.init();
     if (Slides.config.showButtons && !App.state.initialized) {
@@ -204,7 +210,6 @@ var App = {
 
     App.setState({ initialized: true })
   },
-  _onRenderSlides: function (e, pS, nS) { Slides.render(pS, nS) },
   _onMoveTo: function (e, nextPosition) {
     // move to a direction
     Slides.evaluateTransition(nextPosition)
@@ -237,27 +242,6 @@ var App = {
     about.appVersion.text(info.version)
     about.authorEmail.attr('href', ('mailto:'+ info.email))
     about.authorGitHub.attr('href', info.gitHub)
-  },
-
-  /** Activate slideshow UI semantic-ui modules */
-  enableSemanticModules: function () {
-    $helpIcon.popup({
-      inline: true,
-      position: 'top left',
-      on: 'click',
-      transition: 'vertical flip',
-      // close the about section when popup closes
-      onHide: function () { $authorAccordion.accordion('close', 0) }
-    });
-
-    $authorAccordion.accordion()
-    $dimmer
-      .dimmer({
-        duration: {
-          show: 200,
-          hide: 200
-        }
-      })
   },
 };
 
@@ -295,14 +279,14 @@ var Slides = {
     /** @type {String} used when creating the slides to override semantic-ui */
     defaultSlideStyle: 'display: -webkit-flex!important; display: flex!important',
 
+    /** @type {bool} if true try to get the custom .js file for the slideshow */
+    getEvents: false,
+
     /** start with button toggled on or off */
     showButtons: true,
 
     /** create and use the counter for the slides */
     showCounter: true,
-
-    /** {boolean} console log events */
-    debug: false
   },
 
   /**
@@ -321,7 +305,7 @@ var Slides = {
     Slides.container.empty();
 
     /** START LOADING */
-    Slides.getContent(App.fetchEvents)
+    Slides.getContent()
 
     /** INITIAL EVENTS */
 
@@ -330,17 +314,6 @@ var Slides = {
 
     Slides.updateHash();
 
-    if (Slides.config.debug) Slides.debugger(0);
-  },
-
-  debugger: function (nextSlide) {
-    console.log('------ DEBUGGER ------')
-    console.log('App current state', App.state)
-    console.log('total slides: ' + (Slides.lastSlide + 1))
-    console.log('going to slide # ' + nextSlide)
-    console.log('window width: ' + Slides.windowWidth)
-    console.log('slide width: ' + Slides.slideWidth)
-    console.log('translation of: ' + Slides.translateAmount)
   },
 
   _createSlide: function (idx)  {
@@ -354,7 +327,7 @@ var Slides = {
     })[0]
   },
 
-  getContent: function (callback) {
+  getContent: function () {
     console.log('fetching slides')
     // local config
     var frag        = document.createDocumentFragment(),
@@ -404,11 +377,8 @@ var Slides = {
         // append the fragments to the DOM into this.config.container
         Slides.container.append(frag)
 
-        // debug stuff
-        Slides.config.debug ? console.info('All slides loaded. continuing') : null
-        
         // execute callback function. Should be Slides.config.events
-        if (callback) setTimeout(callback, 50);
+        setTimeout(App.fetchEvents, 50);
       })
       .success(function(data, status, xhr) {
         /** success callback */
@@ -509,9 +479,6 @@ var Slides = {
   },
 
   requestTransition: function () {
-    // be verbose if debug is true
-    Slides.config.debug ? Slides.debugger(nextSlide) : null
-    
     // execute the transition
     Slides.render(App.state.prevSlide, App.state.nextSlide)
   },
@@ -750,11 +717,42 @@ var Interface = {
    *                       NOT active the event handlers
    */
   init: function (hide) {
+    console.log('initializing interface')
     if(hide) Slides.config.showButtons = false
+    /** add basic event listeners */
     Interface.addEventListeners()
+    /** initialize interface with semantic-ui modules */
+    Interface.enableSemanticModules()
+
+    /** initialize the dimmer */
     Dimmer.init()
   },
 
+  /** Activate slideshow UI semantic-ui modules */
+  enableSemanticModules: function () {
+    /** help popup from [?] button */
+    $helpIcon.popup({
+      inline: true,
+      position: 'top left',
+      on: 'click',
+      transition: 'vertical flip',
+      // close the about section when popup closes
+      onHide: function () { $authorAccordion.accordion('close', 0) }
+    });
+
+    /** about & contacts accordion */
+    $authorAccordion.accordion()
+    /** dimmer settings */
+    $dimmer
+      .dimmer({
+        duration: {
+          show: 500,
+          hide: 500
+        }
+      })
+  },
+
+  /** basic event listeners for the UI */
   addEventListeners: function () {
     /** click events for slides buttons */
     Interface.addNavigationListeners();
@@ -850,6 +848,7 @@ var Interface = {
     $(document).keydown(Interface.handleKeyPress);
   },
 
+  /** disables the transition event listeners */
   disableTransitions: function () {
     $(document).unbind('keydown', Interface.handleKeyPress)
     
@@ -858,6 +857,8 @@ var Interface = {
     $button.next.off('click');
     $button.last.off('click');
   },
+
+  /** add or restore the transition event listeners */
   restoreTransitions: function () {
     Interface.addKeyPressEvents()
     Interface.addNavigationListeners()
@@ -877,8 +878,6 @@ var Interface = {
         lastSlide    = Slides.lastSlide,
         allButtons   = $button.wrapper.children(),
         allDisabled  = $(allButtons[0]).is('disabled');
-
-    Slides.config.debug ? console.log('App current state', App.state) : null;
 
     /**
       * should be true after the next if statement is executed.
