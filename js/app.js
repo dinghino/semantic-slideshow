@@ -105,7 +105,7 @@ var App = {
       };
 
       // remove the dimmer
-      setTimeout(function () { App.dim('hide')}, 150)
+      setTimeout(function () { Dimmer.set('hide')}, 150)
 
       // call the onEnter event for the first slide after loading
       Slides.onEnter(Slides.currentSlide)
@@ -130,18 +130,6 @@ var App = {
       App.state.events = true
       // run init validation again
       App.slidesReady()
-    })
-    .on('dimSlides', function (e, status) {
-      var state = App.state.dimmer,
-          states = ['show', 'hide'];
-
-      if (status) {
-        $dimmer.dimmer(status)
-        App.state.dimmer = status
-        return
-      }
-      $dimmer.dimmer('toggle')
-      App.state.dimmed = state === 'show' ? 'hide' : 'show'
     })
   },
 
@@ -185,7 +173,6 @@ var App = {
   go: function (direction) { $(App).trigger('moveTo', [direction]) },
   /** rerender the slides and content, adjusting to window resize */
   render: function () { $(App).trigger('renderSlides') },
-  dim: function (status) { $(App).trigger('dimSlides', [status]) },
 
   /** get the about info and set them into the page */
   setAboutInfo: function () {
@@ -283,7 +270,7 @@ var Slides = {
     /** INITIALIZATION */
 
     // empty the slide container
-    App.dim('show')
+    Dimmer.set('show')
     App.state.initialized = false;
     Slides.container.empty();
     
@@ -624,6 +611,75 @@ var Counter = {
   }
 }
 
+var Dimmer = {
+  states: ['show', 'hide', 'toggle'],
+  
+  /** triggers */
+  toggle: function () { $(Dimmer).trigger('dimmer_toggle') },
+  set: function (status) { $(Dimmer).trigger('dimmer_set', [status]) },
+
+  /** event handlers */
+  events: function () {
+    $(Dimmer).on('dimmer_toggle', function (e) { $dimmer.dimmer('toggle') }),
+    $(Dimmer).on('dimmer_set', function (e, status) {
+      Dimmer.activate(status);
+    });
+  },
+
+  activate: function (status) {
+      var currentState  = App.state.dimmer,
+          // status = e.data.status
+          isValid = Dimmer.validate(status);
+
+      if (typeof isValid === 'object') { console.error(isValid) }
+      if (isValid !== true) { console.warn('error in validation?', isValid); return }
+
+      if (!status) {
+        Dimmer.toggle()
+        App.state.dimmer = currentState === 'show' ? 'hide' : 'show'
+        return
+      };
+
+      $dimmer.dimmer(status)
+      App.state.dimmer = status;
+  },
+
+  /**
+   * Validate the dimmer transitions. true or an error if validation is falsy
+   * @param  {string} status     desired new status to validate. optional
+   * @return {bool/error}        true if valid, error if not
+   */
+  validate: function (status) {
+    //  if nothing is passed assume we want to toggle
+    if (!status) return true;
+
+    // validation rules
+    var currentState  = App.state.dimmer,
+        states        = Dimmer.states,
+        isString      = typeof status === 'string',
+        isValid       = (function () {
+          var valid = false
+          for (var i = 0; i < states.length; i++) {
+            if (status === states[i]) valid = true; 
+          }
+          return valid
+        })();
+
+
+    if (status && !isString) {
+      throw new Error('dimmer received an invalid status property somewhere!')
+    };
+
+    if (status && isString && !isValid) {
+      throw new Error('passed status value to Dimmer is not valid. check')
+    };
+
+    if (status && isString && isValid) { return true }
+
+   throw new Error('Something went wrong while validating')
+  }
+};
+
 /**
  * Handles the events for the control buttons rendered on screen
  */
@@ -636,6 +692,7 @@ var Interface = {
   init: function (hide) {
     if(hide) Slides.config.showButtons = false
     Interface.addEventListeners()
+    Dimmer.events()
   },
 
   addEventListeners: function () {
@@ -646,9 +703,9 @@ var Interface = {
     $button.toggle.on('click', Interface.toggle);
 
     // event for the black screen button
-    $button.black.on('click', function () { App.dim() });
+    $button.black.on('click', function () { Dimmer.toggle() });
     // event handler for the dimmer click
-    $dimmer.on('click', function () { App.dim() })
+    $dimmer.on('click', function () { Dimmer.toggle() })
 
     // custom events
     $(Interface).on('toggleUI', Interface.onToggleUI);
@@ -722,7 +779,7 @@ var Interface = {
 
       case 'dim':
         e.preventDefault()
-        App.dim()
+        Dimmer.toggle()
 
       default:
         break
