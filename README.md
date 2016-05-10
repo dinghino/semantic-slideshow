@@ -1,7 +1,8 @@
 > #Preface
 > Project is still work in progress, so this readme **DO NOT** mirror the actual code, functionalities etc... For example there is no need for manual configuration anymore. I'll leave it there but as far as this version all (basic) functionalities can be easily handled from the UI.
+> Fixed issue with Firefox and MS Edge on rendering. Couldn't test on Safari but I think it should work.
 
-> ## Last update to v. 0.9.3b
+> ## Last update to v. 0.9.4
 
 # Simple slide presentational app
 

@@ -269,36 +269,39 @@ var App = {
  * Contains config {object} for the slideshow
  */
 var Slides = {
-  // {number} the total ammount of slides of the project
+  /** {number} the total ammount of slides of the project */
   lastSlide: 0,
 
-  // {number} current slide shown
+  /** {number} current slide shown */
   currentSlide: 0,
 
-  // {element} DOM Element that will contain our slides
+  /** {element} DOM Element that will contain our slides */
   container: $slideContainer,
 
-  // {object} configuration for the application. contains default properties
+  /** {object} configuration for the application. contains default properties */
   config: {
-    // folder that contains the slides
+    /** folder that contains the slides */
     folder: 'slides',
 
-    // hash string for the browser address. will get the current slide # after
+    /** hash string for the browser address. will get the current slide # after */
     hash: 'slide',
 
-    // default animations for slide transition
+    /** default animations for slide transition */
     transition: {
-      left: 'fly left',
-      right: 'fly right',
+      left: 'fade left',
+      right: 'fade right',
     },
 
-    // start with button toggled on or off
+    /** @type {String} used when creating the slides to override semantic-ui */
+    defaultSlideStyle: 'display: -webkit-flex!important; display: flex!important',
+
+    /** start with button toggled on or off */
     showButtons: true,
 
-    // create and use the counter for the slides
+    /** create and use the counter for the slides */
     showCounter: true,
 
-    // {boolean} console log events
+    /** {boolean} console log events */
     debug: false
   },
 
@@ -312,7 +315,7 @@ var Slides = {
     Dimmer.set('show')
 
     /** reset app initialization to false if needed */
-    App.state.initialized === true ? App.setState({ initialized: false}) : null;
+    App.state.initialized === true ? App.setState({ initialized: false }) : null;
     
     /** empty the slide container */
     Slides.container.empty();
@@ -347,7 +350,7 @@ var Slides = {
       id: hash + idx,
       // TODO: use semantic-ui transitions setting initial status
       class: idx > 0 ? 'transition hidden' : 'transition visible',
-      style: idx === 0 ? 'display: -webkit-box !important;' : ''
+      style: idx === 0 ? 'display: -webkit-flex!important; display: flex!important' : ''
     })[0]
   },
 

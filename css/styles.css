@@ -8,14 +8,14 @@ body {
   );
 }
 
-.wrap {
-  position: absolute;
-  margin: 0 auto;
-  width: 100%;
-  overflow: hidden; /* because children will be floated */
-}
 [data-role="dimmer"] {
   background: rgba(0, 0, 0, 0.95)!important;
+}
+
+[data-role="ui"] {
+  position: fixed;
+  bottom: 0;
+  width: 100%
 }
 
 [data-role="helpIcon"] {
@@ -41,35 +41,39 @@ body {
   margin: 10px!important;
 }
 
-[data-role="slides"] {
-  width: 999999px;
+[data-role="buttons"] {
+  position: fixed;
+  bottom: 0;
+  right: 45px;
+  margin: 10px!important;
+}
+
+[data-role="slides"],
+[data-role="wrap"] {
+  position: absolute;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* because children will be floated */
+}
+
+/* Flexible Box Model */
+[data-role="slides"] > div {
+  display: -webkit-flex;
+  -webkit-justify-content: center;
+  -webkit-align-content: center;
+  -webkit-align-items: center;
+  -webkit-flex-wrap: wrap;
+
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 [data-role="slides"] > div {
   position: absolute;
   height: 100%;
   width: 100%;
-  float: left;
-  margin-right: 200px;
-  /*text-align: center;*/
-  -webkit-transition: -webkit-transform 0.5s ease-in-out;
-  transition: transform 0.5s ease-in-out;
-
-  /* Flexible Box Model */
-  display: -webkit-box;
-  -webkit-box-align: center;
-  -webkit-box-orient: horizontal;
-  -webkit-box-pack: center;
-
-  display: box;
-  box-align: center;
-  box-orient: horizontal;
-  box-pack: center;
-}
-
-[data-role="buttons"] {
-  position: fixed;
-  bottom: 0;
-  right: 45px;
-  margin: 10px!important;
 }
