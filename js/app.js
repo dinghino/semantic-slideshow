@@ -1,5 +1,6 @@
 
 var I = 0
+var INIT_TIME
 
 /**
  * Main application object. Handles events, initialization and general state of
@@ -35,8 +36,8 @@ var App = {
     initialized: false,
     /** @property {boolean} true if custom events are present and ready */
     events: false,
-    /** @property {string} status of the dimmer. uses semantic dimmer options */
-    dimmer: 'hide',
+    /** @property {bool} true if active, false if hidden */
+    dimmer: false,
     /** @type {Number} total number of slides */
     totalSlides: 0,
     /** @property {number} currently shown slide */
@@ -49,9 +50,9 @@ var App = {
 
   setState: function (nextState) {
     var verbose = App.config.verbose;
+    if(verbose) console.time('this set state took');
 
-    verbose ? console.group('[', I++, '] setState. passing', nextState) : null;
-    verbose ? console.error('functions chain') : null;
+
     // validation for arguments
     if (typeof nextState !== 'object') {
       throw new Error('new state should be an object!')
@@ -69,11 +70,21 @@ var App = {
     /** if length of array is > 10, remove oldest one */
     if(App._prevStates.length > App._maxStateHistory) { App._prevStates.pop() }
 
-    App.checkStateDiffs(oldState, newState)
-    
-    verbose ? console.groupEnd() : null;
+    /**
+     * check the changes in the state and return a diff object
+     * @type {objects} differences between old state and new state
+     *                 diff is structured as diff[propName]: {prev, next}
+     */
+    var diff = App.checkStateDiffs(oldState, newState)
+
     /** update current state with the new object */
     App.state = newState
+
+    /** if requested log the state update informations */
+    App.__setStateLog(oldState, nextState, diff, newState)
+
+    /** if <diff> is popuplated handle the change */
+    if (diff) App.onStateChange(diff);
   },
 
   /**
@@ -83,8 +94,6 @@ var App = {
    * @return {[type]}     [description]
    */
   getOldState: function (idx) {
-    idx = parseInt(idx, 10)
-    console.log(idx, typeof idx, App._prevStates[idx])
     /** if no idx is passed return the whole array */
     if(typeof idx !== 'number') return App._prevStates;
 
@@ -98,35 +107,72 @@ var App = {
       throw new Error(err)
     };
 
+    /** find the requested old state */
     var oldState = App._prevStates[idx]
-    /** check if it's an object. if not (undefined) */
-    if (typeof oldState === 'object') return oldState;
-    throw new Error('requested old state index do not exists yet.')
 
+    /** check if it's an object. if not (undefined) return it */
+    if (typeof oldState === 'object') return oldState;
+
+    /** if oldState is not an {object} throw an error just in case */
+    throw new Error('requested old state index do not exists yet.')
   },
 
   /** evaluate the differences between two state objects */
   checkStateDiffs: function (prevState, nextState) {
     var keys    = Object.keys(nextState),
-        verbose = App.config.verbose;
-    
-    // console.log('prevState', prevState)
-    // console.log('nextState', nextState)
+        verbose = App.config.verbose,
+        getDiff = false
+        /** log strings */
+        changes  = {};
 
     keys.forEach(function (k, i) {
-      if (prevState.hasOwnProperty(k)) {
-        var changed = prevState[k] !== nextState[k];
-        // console.info('prop', k, 'found in prevState:', prevState[k]);
-        changed && verbose
-          ? console.warn('changed', k, 'from', prevState[k], 'to', nextState[k])
-          : null;
-      } else {
-        verbose 
-        ? console.warn('new prop', k,
-          'has ben added to the state: nextState.' + k +':', nextState[k]) 
-        : null;
+      /** check for changes in present properties */
+      var changed = prevState[k] !== nextState[k];
+
+      if (changed) {
+      getDiff = true;
+      /** @type {Object} store changes informations */
+      var change  = { previous: prevState[k], next: nextState[k] };
+
+      /** assign newly created object to changes[k] */
+      changes[k] = change;
       }
     })
+    /** return the objects containing the changes */
+    if(getDiff) return changes
+  },
+
+  onStateChange: function (diff) {
+    /** @type {array} property changed */
+    var changed = Object.keys(diff),
+        d       = diff;
+
+    if (d.dimmer) {
+      $(Dimmer).trigger('dimmer_set', [{ status: d.dimmer.next }])
+    }
+  },
+
+  /** be verbose about changes in App.state and go full console! */
+  __setStateLog: function (oldState, nextState, changes, newState) {
+    if (!App.config.verbose) return;
+    var propsChanged = changes ? Object.keys(changes).length : 0,
+        timestamp    = ((new Date().getTime() - INIT_TIME) / 1000).toFixed(3) + 's'
+
+    console.groupCollapsed(
+      '[%s][%d] updating state with %d changes:', 
+      timestamp, I++, propsChanged, nextState
+     )
+      console.error('functions chain. identify the caller')
+      console.groupCollapsed('changes table')
+        console.table(changes)
+      console.groupEnd()
+      console.groupCollapsed('state objects')
+        console.log('prev:', oldState)
+        console.log('next:', newState)
+      console.groupEnd()
+    console.timeEnd('this set state took')
+    console.groupEnd()
+
   },
 
   /**
@@ -136,6 +182,8 @@ var App = {
    * @return {[type]}        [description]
    */
   init: function (config) {
+    /** save the time of the App.init to be used in logs and stuff */
+    INIT_TIME = new Date().getTime()
     /** merge custom config for the whole app. used primarly to toggle debugging */
     if (config) {
       console.info('custom global config detected! merging', config)
@@ -143,7 +191,7 @@ var App = {
     };
 
     /** enable semantic-ui debugger if verbose is true */
-    if (App.config.verbose) $.site('enable debug');
+    if (App.config.semanticLog) $.site('enable debug');
 
     /** add custom app event listeners to objects and DOM */
     App._events()
@@ -269,17 +317,20 @@ var App = {
     };
 
     // remove the dimmer
-    setTimeout(function () { Dimmer.set('hide')}, 150)
+    setTimeout(function () {
+      App.setState({
+        dimmer: false,
+        initialized: true
+      })
+    }, 750)
 
     // call the onEnter event for the first slide after loading
-    Slides.onEnter(Slides.currentSlide)
-
-    App.setState({ initialized: true })
+    Slides.onEnter(App.state.currentSlide)
   },
   _onMoveTo: function (e, nextPosition) {
     // move to a direction
     Slides.evaluateTransition(nextPosition)
-    Slides.requestTransition()
+    Slides.render()
   },
   _onEnableEvents: function (e) {
     console.log('activating events')
@@ -319,12 +370,6 @@ var App = {
  * Contains config {object} for the slideshow
  */
 var Slides = {
-  /** {number} the total ammount of slides of the project */
-  lastSlide: 0,
-
-  /** {number} current slide shown */
-  currentSlide: 0,
-
   /** {element} DOM Element that will contain our slides */
   container: $slideContainer,
 
@@ -362,7 +407,7 @@ var Slides = {
     /** INITIALIZATION */
 
     /** toggle the dimmer to 'show', hiding content loading */
-    Dimmer.set('show')
+    App.setState({ dimmer: true })
 
     /** reset app initialization to false if needed */
     App.state.initialized === true ? App.setState({ initialized: false }) : null;
@@ -435,20 +480,18 @@ var Slides = {
          * append everything into the dom and continue configuring the slideshow
          */
         
-        /** save slide quantity in Slides.lastSlide */
+        /** save slide quantity in App.state */
         App.setState({ totalSlides: slidesQty })
-        Slides.lastSlide = --slidesQty
 
-        // append the fragments to the DOM into this.config.container
+        /** append the fragments to the DOM into this.config.container */
         Slides.container.append(frag)
 
-        // execute callback function. Should be Slides.config.events
-        setTimeout(App.fetchEvents, 50);
+        /** execute callback function */
+        setTimeout(App.fetchEvents, 0);
       })
       .success(function(data, status, xhr) {
-        /** success callback */
+        /** create and append the slide to the fragments */
         $(bit).append($(data)[0]);
-
         frag.appendChild(bit);
 
         if (status === 'error') loadStatus = status
@@ -462,10 +505,9 @@ var Slides = {
   },
 
   /** render and animate the slides, updating values if necessary */
-  render: function (prevSlide, nextSlide) {
-
+  render: function () {
     /** execute the animation for the slides */
-    setTimeout(function () { Slides.animate(prevSlide, nextSlide) }, 0)
+    setTimeout(Slides.animate, 10)
   },
 
   /////////////////////
@@ -479,9 +521,8 @@ var Slides = {
    */
   evaluateTransition: function (direction) {
     /** local variables */
-    var nextSlide,
-        previousSlide,
-        currentSlide = Slides.currentSlide
+    var currentSlide = App.state.currentSlide,
+        lastSlide    = App.state.totalSlides
 
     /**
      * update object properties depending on where we are going.
@@ -489,63 +530,34 @@ var Slides = {
      */
     switch (direction) {
       case 'next':
-        Slides.onLeave(currentSlide)
-        previousSlide = currentSlide
-        nextSlide = ++Slides.currentSlide
-        Slides.onEnter(nextSlide)
-        Slides.translateAmount -= Slides.slideWidth
-        App.setState({
-          prevSlide: previousSlide,
-          nextSlide: nextSlide
-        })
+        App.setState({ nextSlide: Number(currentSlide + 1) })
         break
 
       case 'prev':
-        Slides.onLeave(currentSlide)
-        previousSlide = currentSlide
-        nextSlide = --Slides.currentSlide
-        Slides.onEnter(nextSlide)
-        Slides.translateAmount += Slides.slideWidth
-        App.setState({
-          prevSlide: previousSlide,
-          nextSlide: nextSlide
-        })
+        App.setState({ nextSlide: Number(currentSlide - 1) })
         break
 
       case 'first':
-        Slides.onLeave(currentSlide)
-        previousSlide = currentSlide
-        nextSlide = 0;
-        Slides.currentSlide = 0;
-        Slides.translateAmount = 0;
-        Slides.onEnter(Slides.currentSlide)
-        App.setState({
-          prevSlide: previousSlide,
-          nextSlide: nextSlide
-        })
+        App.setState({ nextSlide: Number(0) })
         break
 
       case 'last':
-        Slides.onLeave(currentSlide)
-        previousSlide = currentSlide
-        nextSlide = Slides.lastSlide
-        Slides.currentSlide = Slides.lastSlide
-        Slides.onEnter(Slides.currentSlide)
-        Slides.translateAmount = -(Slides.slideWidth * Slides.currentSlide)
-        App.setState({
-          prevSlide: previousSlide,
-          nextSlide: nextSlide
-        })
+        App.setState({ nextSlide: Number(lastSlide - 1) })
         break
 
       default:
         throw new Error('Error while moving... what did you do? You nasty...')
     }
+
   },
 
+  // TODO: temporary deprecated. transitions should start HERE
+  // request transition {direction} => Interface.handleKeyPress (move function here?)
+  // if ok and got {direction} => evaluateTransition and setState with new slides
+  // then if state changed should call Slides.render and start animation
   requestTransition: function () {
     // execute the transition
-    Slides.render(App.state.prevSlide, App.state.nextSlide)
+    Slides.render()
   },
 
   onEnter: function (slide) {
@@ -580,8 +592,10 @@ var Slides = {
   /**
    *  handler for the animation to move the slides
    */
-  animate: function (prevSlide, nextSlide) {
-    var slides      = Slides.container.children(),
+  animate: function (/*nextSlide*/) {
+    var prevSlide   = App.state.currentSlide,
+        nextSlide   = App.state.nextSlide,
+        slides      = Slides.container.children(),
         value       = Slides.translateAmount,
         hash        = Slides.config.hash;
         prev        = '',
@@ -604,23 +618,32 @@ var Slides = {
       transition.enter = Slides.config.transition.left
     }
 
-
     // update DOM
     if (prev) {
       prev.transition({
         animation: transition.leave,
         // handle the event listeners
-        onStart: Interface.disableTransitions
+        onStart: function () {
+          /** disable transition controls to avoid mess */
+          Interface.disableTransitions()
+          /** call the onLeave method for current slide */
+          Slides.onLeave(prevSlide)
+        }
       })
     }
     if (next) {
       next.transition({
         animation: transition.enter,
+        onStart: function () {
+          /** activate onEnter for nextSlide slide */
+          Slides.onEnter(nextSlide)
+        },
         // handle the event listeners
-        onComplete: Interface.restoreTransitions
+        onComplete: function () {
+          Interface.restoreTransitions()
+        }
       })
     }
-    Interface.toggleButtons()
     App.setState({
       currentSlide: nextSlide,
       prevSlide: prevSlide,
@@ -629,7 +652,11 @@ var Slides = {
 
     Slides.config.showCounter ? Counter.set() : null
 
-    setTimeout(Slides.updateHash, 50)
+    /** wait to update buttons and hash, giving the state time tu update */
+    setTimeout(function () {
+      Interface.toggleButtons()
+      Slides.updateHash()
+    }, 50)
   },
 
   /**
@@ -637,7 +664,7 @@ var Slides = {
    */
   updateHash: function () {
     var hash  = Slides.config.hash,
-        slide = Slides.currentSlide;
+        slide = App.state.currentSlide;
 
     // update the address hash
     location.hash = hash + slide
@@ -692,68 +719,53 @@ var Counter = {
     /** update the label value */
     $($label[0]).text(text)
   },
-  toggle: function () {
-    $counter.transition('fly up')
-  }
+  toggle: function () { $counter.transition('fly up') }
 }
 
 var Dimmer = {
-  states: ['show', 'hide', 'toggle'],
+  states: ['show', 'hide'],
   
   /** triggers */
-  toggle: function () { $(Dimmer).trigger('dimmer_toggle') },
   set: function (status) { $(Dimmer).trigger('dimmer_set', [status]) },
 
   /** add event listeners */
   init: function () {
     $(Dimmer)
-    .on('dimmer_toggle', Dimmer._toggleState)
-    .on('dimmer_set', { status: status }, Dimmer._changeState);
+      .on('dimmer_set', { status: status }, Dimmer._changeState);
   },
 
   /** event handlers */
-  _toggleState: function (e) {
-    $dimmer.dimmer('toggle')
-    var newState = App.state.dimmer === 'show' ? 'hide' : 'show'
-    App.setState({ dimmer: newState })
-  },
-
   _changeState: function (e, data) {
-      var currentState  = App.state.dimmer,
-          // status = e.data.status
-          isValid = Dimmer.validate(data.status);
+    /** @type {bool} true activates the dimmer */
+    var request = data.status
+    /** @type {string} 'show' or 'hide' depending on true/false*/
+    var state   = request ? Dimmer.states[0] : Dimmer.states[1]
 
-      if (typeof isValid === 'object') { console.error(isValid) }
-
-      if (isValid !== true) {
-        console.warn('error in validation?', isValid);
-        return
-      };
-
-      if (!data.status) {
-        Dimmer.toggle();
-        return
-      };
-
-      $dimmer.dimmer(data.status);
-      App.setState({ dimmer: data.status });
+    $dimmer.dimmer(state)
   },
 
   /** utility methods */
 
   /**
+   * @DEPRECATED ~ kept as memento.
+   * Can validate a @prop {string} <status> using an array of values
+   * TODO: Move somewhere. can be used to validate transition selection
+   *       & customization, using an array of valid strings.
+   *
    * Validate the dimmer transitions. true or an error if validation is falsy
    * @param  {string} status     desired new status to validate. optional
-   * @return {bool/error}        true if valid, error if not
+   * @param  {array}  array      Array of valid values to check with
+   * @return {bool/error}        true if valid, undefined if not
+   *                             will throw an error if not valid
    */
-  validate: function (status) {
+  validate: function (status, validationArray) {
     //  if nothing is passed assume we want to toggle
     if (!status) return true;
 
-    // validation rules
-    var currentState  = App.state.dimmer,
-        states        = Dimmer.states,
+    /** validation rules */
+    var states        = validationArray,
         isString      = typeof status === 'string',
+        /** actual validation of the passed string */
         isValid       = (function () {
           var valid = false
           for (var i = 0; i < states.length; i++) {
@@ -762,7 +774,7 @@ var Dimmer = {
           return valid
         })();
 
-
+    /** error handling */
     if (status && !isString) {
       throw new Error('dimmer received an invalid status property somewhere!')
     };
@@ -771,9 +783,11 @@ var Dimmer = {
       throw new Error('passed status value to Dimmer is not valid. check')
     };
 
+    /** everything is valid. return true */
     if (status && isString && isValid) { return true }
 
-   throw new Error('Something went wrong while validating')
+    /** in case something went wrong, throws an error to notify */
+    throw new Error('Something went wrong while validating')
   }
 };
 
@@ -824,15 +838,21 @@ var Interface = {
 
   /** basic event listeners for the UI */
   addEventListeners: function () {
+
+    /** call is done in more than one event. shortening */
+    function toggleDimmer () {
+      App.setState({ dimmer: !App.state.dimmer })
+    };
+
     /** click events for slides buttons */
     Interface.addNavigationListeners();
 
     /** event for the toggler button */
     $button.toggle.on('click', Interface.toggle);
     /** event for the black screen button */
-    $button.black.on('click', Dimmer.toggle);
+    $button.black.on('click', toggleDimmer);
     /** event handler for the dimmer click */
-    $dimmer.on('click', Dimmer.toggle)
+    $dimmer.on('click', toggleDimmer)
 
     /** custom events */
     $(Interface).on('toggleUI', Interface.onToggleUI);
@@ -877,25 +897,25 @@ var Interface = {
     switch (key) {
       case 'left':
         e.preventDefault();
-        if (Slides.currentSlide === 0) break;
+        if (App.state.currentSlide === 0) break;
         App.go('prev')
         break
 
       case 'right':
         e.preventDefault();
-        if (Slides.currentSlide === Slides.lastSlide) break;
+        if (App.state.currentSlide === App.state.totalSlides - 1) break;
         App.go('next')
         break
 
       case 'home':
         e.preventDefault();
-        if(Slides.currentSlide === 0) break
+        if(App.state.currentSlide === 0) break
         App.go('first')
         break
 
       case 'end':
         e.preventDefault();
-        if(Slides.currentSlide === Slides.lastSlide) break
+        if(App.state.currentSlide === App.state.totalSlides) break
         App.go('last')
         break
 
@@ -906,7 +926,9 @@ var Interface = {
 
       case 'dim':
         e.preventDefault()
-        Dimmer.toggle()
+        App.setState({
+          dimmer: !App.state.dimmer
+        })
 
       default:
         break
@@ -944,8 +966,8 @@ var Interface = {
    * toggle classes from buttons
    */ 
   onToggleButtons: function () {
-    var currentSlide = Slides.currentSlide,
-        lastSlide    = Slides.lastSlide,
+    var currentSlide = App.state.currentSlide,
+        lastSlide    = App.state.totalSlides,
         allButtons   = $button.wrapper.children(),
         allDisabled  = $(allButtons[0]).is('disabled');
 
@@ -983,7 +1005,7 @@ var Interface = {
       $button.prev.removeClass('disabled');
     };
 
-    if (currentSlide === lastSlide) {
+    if (currentSlide === (lastSlide - 1)) {
       $button.next.addClass('disabled');
       $button.last.addClass('disabled');
     } else {
@@ -999,6 +1021,7 @@ var Interface = {
     Slides.config.debug ? console.log('App current state', App.state) : null;
     $button.wrapper.transition('fly left');
     Counter.toggle();
+    // TODO: invert behaviour. don't set state here
     App.setState({ buttonShown: !state })
   }
 };
