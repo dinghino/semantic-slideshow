@@ -60,12 +60,12 @@ var App = {
     /**
      * Assign oldState and newState objects properties
      */
-    var oldState = $.extend(true, {}, App.state),
+    var prevState = $.extend(true, {}, App.state),
         /** @type {object} merge the old state with the new props passed */
         newState = Object.assign(App.state, nextState);
 
     /** add last state as first of _prevStates */
-    App._prevStates.unshift(oldState)
+    App._prevStates.unshift(prevState)
 
     /** if length of array is > 10, remove oldest one */
     if(App._prevStates.length > App._maxStateHistory) { App._prevStates.pop() }
@@ -75,16 +75,19 @@ var App = {
      * @type {objects} differences between old state and new state
      *                 diff is structured as diff[propName]: {prev, next}
      */
-    var diff = App.checkStateDiffs(oldState, newState)
+    var diff = App.checkStateDiffs(prevState, newState)
+    /** if requested log the state update informations */
+    if (verbose) App.__setStateLog(prevState, nextState, diff, newState)
 
     /** update current state with the new object */
     App.state = newState
 
-    /** if requested log the state update informations */
-    App.__setStateLog(oldState, nextState, diff, newState)
 
     /** if <diff> is popuplated handle the change */
-    if (diff) App.onStateChange(diff);
+    if (diff) App.onStateChange(prevState, newState, diff);
+
+    /** call the user defined method */
+    App.didUpdate(prevState);
   },
 
   /**
@@ -120,7 +123,6 @@ var App = {
   /** evaluate the differences between two state objects */
   checkStateDiffs: function (prevState, nextState) {
     var keys    = Object.keys(nextState),
-        verbose = App.config.verbose,
         getDiff = false
         /** log strings */
         changes  = {};
@@ -142,21 +144,46 @@ var App = {
     if(getDiff) return changes
   },
 
-  onStateChange: function (diff) {
+  /** default behaviour on state changes. triggers app events */
+  // TODO: Move all (main) triggers here
+  onStateChange: function (prevState, nextState, diff) {
     /** @type {array} property changed */
     var changed = Object.keys(diff),
+        pS      = prevState,
+        nS      = nextState,
         d       = diff;
 
     if (d.dimmer) {
-      $(Dimmer).trigger('dimmer_set', [{ status: d.dimmer.next }])
+      console.log('setting dimmer')
+      $(Dimmer).trigger('dimmer_set', [{ status: nS.dimmer }])
     }
+    if (d.nextSlide && nS.nextSlide) {
+      console.log('requested change for slide', nS.nextSlide)
+      Slides.render()
+      if (nS.nextSlide > pS.currentSlide) {
+        console.log('going RIGHT')
+      } else {
+        console.log('going LEFT')
+      }
+    }
+  },
+
+  /**
+   * similar to react's componentDidUpdate, is called after the app updated
+   * its state and the old state is set to into the history
+   * @param  {[type]} prevState [description]
+   * @return {[type]}           [description]
+   */
+  didUpdate: function (prevState) {
+    // user definable function, can be used to trigger stuff
+    // if App.state[prop] !== prevState[prop]
   },
 
   /** be verbose about changes in App.state and go full console! */
   __setStateLog: function (oldState, nextState, changes, newState) {
-    if (!App.config.verbose) return;
     var propsChanged = changes ? Object.keys(changes).length : 0,
-        timestamp    = ((new Date().getTime() - INIT_TIME) / 1000).toFixed(3) + 's'
+        now          = new Date().getTime(),
+        timestamp    = ((now - INIT_TIME) / 1000).toFixed(3) + 's'
 
     console.groupCollapsed(
       '[%s][%d] updating state with %d changes:', 
@@ -184,7 +211,7 @@ var App = {
   init: function (config) {
     /** save the time of the App.init to be used in logs and stuff */
     INIT_TIME = new Date().getTime()
-    /** merge custom config for the whole app. used primarly to toggle debugging */
+    /** merge custom config for the app. used primarly to toggle debugging */
     if (config) {
       console.info('custom global config detected! merging', config)
       App.config = Object.assign(App.config, config)
@@ -408,6 +435,7 @@ var Slides = {
 
     /** toggle the dimmer to 'show', hiding content loading */
     App.setState({ dimmer: true })
+    Slides.addEventListeners()
 
     /** reset app initialization to false if needed */
     App.state.initialized === true ? App.setState({ initialized: false }) : null;
@@ -424,7 +452,10 @@ var Slides = {
     Interface.addKeyPressEvents();
 
     Slides.updateHash();
+  },
 
+  addEventListeners: function () {
+    $(Slides).on('request:transition', Slides.evaluateTransition)
   },
 
   _createSlide: function (idx)  {
@@ -519,10 +550,14 @@ var Slides = {
    * @param {string} direction the direction to move. 
    *                 one of 'next', 'prev', 'first', 'last'
    */
-  evaluateTransition: function (direction) {
+  evaluateTransition: function (e, data) {
     /** local variables */
     var currentSlide = App.state.currentSlide,
-        lastSlide    = App.state.totalSlides
+        lastSlide    = App.state.totalSlides,
+        direction    = data
+
+    /** if activated with $.trigger, should log requestTransition argument */
+    if (data) console.log(data, direction)
 
     /**
      * update object properties depending on where we are going.
@@ -548,16 +583,16 @@ var Slides = {
       default:
         throw new Error('Error while moving... what did you do? You nasty...')
     }
-
   },
 
   // TODO: temporary deprecated. transitions should start HERE
   // request transition {direction} => Interface.handleKeyPress (move function here?)
   // if ok and got {direction} => evaluateTransition and setState with new slides
   // then if state changed should call Slides.render and start animation
-  requestTransition: function () {
+  requestTransition: function (nextSlide) {
     // execute the transition
-    Slides.render()
+    // Slides.render()
+    $(Slides).trigger('request:transition', [nextSlide])
   },
 
   onEnter: function (slide) {
@@ -861,10 +896,18 @@ var Interface = {
  
   /** add functionality to the navigational buttons */
   addNavigationListeners: function () {
-    $button.first.on('click', function () { App.go('first') });
-    $button.prev.on('click', function () { App.go('prev') });
-    $button.next.on('click', function () { App.go('next') });
-    $button.last.on('click', function () { App.go('last') });
+    $button.first.on('click', function () {
+      Slides.requestTransition('first')
+    });
+    $button.prev.on('click', function () {
+      Slides.requestTransition('prev')
+    });
+    $button.next.on('click', function () {
+      Slides.requestTransition('next')
+    });
+    $button.last.on('click', function () {
+      Slides.requestTransition('last')
+    });
   },
 
   /** validate a keyCode from a keypress to handle navigation */
@@ -898,25 +941,25 @@ var Interface = {
       case 'left':
         e.preventDefault();
         if (App.state.currentSlide === 0) break;
-        App.go('prev')
+        Slides.requestTransition('prev')
         break
 
       case 'right':
         e.preventDefault();
         if (App.state.currentSlide === App.state.totalSlides - 1) break;
-        App.go('next')
+        Slides.requestTransition('next')
         break
 
       case 'home':
         e.preventDefault();
         if(App.state.currentSlide === 0) break
-        App.go('first')
+        Slides.requestTransition('first')
         break
 
       case 'end':
         e.preventDefault();
         if(App.state.currentSlide === App.state.totalSlides) break
-        App.go('last')
+        Slides.requestTransition('last')
         break
 
       case 'toggle':
