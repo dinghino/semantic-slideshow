@@ -16,7 +16,7 @@ $s1Btn.on('click', function () {
   console.log('You triggered an App event from a slide!')
   $s1Btn.transition('remove looping')
   /** accessing App methods to control the slides */
-  App.go('next');
+  Slides.requestTransition('next')
 });
 
 /**
@@ -24,7 +24,7 @@ $s1Btn.on('click', function () {
  * contains user defined callbacks for the slides onEnter and onLeave events
  */
 _slidesEvents = {
-  0: {
+  1: {
     onEnter: function () {
       // console.log('entering slide 0')
         /**
@@ -40,7 +40,7 @@ _slidesEvents = {
       // console.log('exiting slide 0')
     },
   },
-  1: {
+  2: {
     // onEnter: function () { console.log('entering slide 1') },
     onLeave: "I'm not a function so I don't count :(",
   }

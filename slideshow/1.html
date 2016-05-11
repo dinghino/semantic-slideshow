@@ -1,36 +1,18 @@
-<div class="ui container grid">
-  <div class="five wide column">
-    <div class="ui piled secondary segment">
-      <div class="ui header">
-        This seems cool...
-        <div class="sub header">how do I test it?</div>
+<div class="ui center aligned container">
+  <h2 class="ui icon header">
+    <i class="huge icons">
+      <i class="large blue inverted smile icon" style="margin-top: 6px"></i>
+      <i class="black notched circle icon"></i>
+      <i class="thin circle blue icon"></i>
+    </i>
+    <div class="content">
+      Slides are awesome!
+      <div class="sub header">
+        <p>especially if they can be...</p>
+        <div id="s1_btn" class="ui large circular primary button" >
+          interactive
+        </div>
       </div>
-      <p>The app works by loading html pages that are found inside a <strong>folder</strong>, like <em>slideshow</em> that you've seen in the previous page. You also need to specify the <strong>number</strong> of slides that you want to load.</p>
     </div>
-  </div>
-  <div class="eight wide column">
-    <div class="ui piled secondary segment">
-      <div class="ui header">Ok... but how do I create slides?</div>
-      <p>Slides are just <code>html</code> files with just a <code>div</code> container inside.</p>
-      <p>Inside that div you can do whatever you want. You can use <a href="http://semantic.ui.com" target="_blank">semantic-ui</a> to style the content too, which is awesome. Remember that the slides get <code>flexbox</code> from css, so you can use and experiment with that.</p>
-      <p>Also remember that the slides can be in any folder you want to (so you can have multiple slideshows to load) but <strong>must</strong> have predetermined name, as in numeric, starting from <code>0.html</code>, without missing any.</p>
-    </div>
-  </div>
-  <div class="thirteen wide column">
-    <div class="ui stacked secondary segment">
-      <div class="ui header">And what about events and script?</div>
-      Since the slides are just <code>html</code>, you can add a <code>script</code> tag anywhere and the content will load and execute. The suggestion is to use the first slide to load everything, or split each slide functionalities for each slide, if there is lots to do...Since the pages will be loaded together, though, this is just a design preference.
-      <div class="ui block header">
-        <i class="info icon"></i>
-        <div class="content">hooks and app events</div>
-      </div>
-      You can also access and utilize app events and methods while writing down your slides, but <strong>there is a catch</strong>.
-      If you want to access hooks you have to create an object inside a <code>script</code> tag that needs to be called <code>_slidesEvents</code>. inside that you have to nest an object for every slide you want to access the hooks, and define the callbacks functions for those events.
-      <div class="ui block header">
-        <i class="help icon"></i>
-        <div class="content">...uh?</div>
-      </div>
-      If you didn't understand what I mean, you can take a look at <code>0.html</code> inside the <code>slideshow</code> folder and check the script tag... 
-    </div>
-  </div>
+  </h2>
 </div>

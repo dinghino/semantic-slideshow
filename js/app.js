@@ -41,7 +41,7 @@ var App = {
     /** @type {Number} total number of slides */
     totalSlides: 0,
     /** @property {number} currently shown slide */
-    currentSlide: 0,
+    currentSlide: 1,
     /** @type {number} previously shown slide ~ used and set in transitions */
     prevSlide: undefined,
     /** @type {number} next slide to show ~ used and set in transitions */
@@ -153,19 +153,16 @@ var App = {
         nS      = nextState,
         d       = diff;
 
-    if (d.dimmer) {
-      console.log('setting dimmer')
-      $(Dimmer).trigger('dimmer_set', [{ status: nS.dimmer }])
-    }
-    if (d.nextSlide && nS.nextSlide) {
-      console.log('requested change for slide', nS.nextSlide)
-      Slides.render()
-      if (nS.nextSlide > pS.currentSlide) {
-        console.log('going RIGHT')
-      } else {
-        console.log('going LEFT')
-      }
-    }
+    /** activate the dimmer if state changed */
+    // TODO: passing the state is useless. let the dimmer fetch it from 
+    // App.state.dimmer
+    if (d.dimmer) $(Dimmer).trigger('dimmer_set', [{ status: nS.dimmer }])
+    /**
+     * if nextSlide changed and is present in nextSlide, render the slides.
+     * evaluation of the next slide number is already done. after animating state
+     * will get the new current (should be old next), new prev and undefined next
+     */
+    if (d.nextSlide && nS.nextSlide) Slides.render()
   },
 
   /**
@@ -237,7 +234,7 @@ var App = {
    */
   validateSlideshowFolder: function (folderName, success, failure) {
     // define the path to the test file
-    var test = folderName + '/0.html'
+    var test = folderName + '/1.html'
 
     $.get(test)
     .success(function () {
@@ -463,8 +460,10 @@ var Slides = {
 
     return $('<div>', {
       id: hash + idx,
-      class: idx > 0 ? 'transition hidden' : 'transition visible',
-      style: idx === 0 ? 'display: -webkit-flex!important; display: flex!important' : ''
+      class: idx > 1 ? 'transition hidden' : 'transition visible',
+      style: idx === 1
+                ? 'display: -webkit-flex!important; display: flex!important'
+                : ''
     })[0]
   },
 
@@ -473,7 +472,7 @@ var Slides = {
     // local config
     var frag        = document.createDocumentFragment(),
         hash        = Slides.config.hash,
-        slidesQty   = 0,
+        slidesQty   = 1,
         folder      = Slides.config.folder,
         loadStatus  = 'OK',
         i = 0,
@@ -502,6 +501,7 @@ var Slides = {
 
       $.get(nextSlide)
       .fail(function (e) {
+        --slidesQty
         /** error handling */
         var error = handleError(e)
         if (error) throw new Error(error);
@@ -556,28 +556,25 @@ var Slides = {
         lastSlide    = App.state.totalSlides,
         direction    = data
 
-    /** if activated with $.trigger, should log requestTransition argument */
-    if (data) console.log(data, direction)
-
     /**
      * update object properties depending on where we are going.
      * if case is no match throw an error | shouldn't happen from UI
      */
     switch (direction) {
       case 'next':
-        App.setState({ nextSlide: Number(currentSlide + 1) })
+        App.setState({ nextSlide: currentSlide + 1 })
         break
 
       case 'prev':
-        App.setState({ nextSlide: Number(currentSlide - 1) })
+        App.setState({ nextSlide: currentSlide - 1 })
         break
 
       case 'first':
-        App.setState({ nextSlide: Number(0) })
+        App.setState({ nextSlide: 1 })
         break
 
       case 'last':
-        App.setState({ nextSlide: Number(lastSlide - 1) })
+        App.setState({ nextSlide: lastSlide })
         break
 
       default:
@@ -934,31 +931,33 @@ var Interface = {
 
   /** handle a keypress in the page, when listeners are active */
   handleKeyPress: function(e) {
-    var key = Interface.validateKeyPress(e.keyCode);
+    var key     = Interface.validateKeyPress(e.keyCode),
+        onFirst = App.state.currentSlide === 1,
+        onLast  = App.state.currentSlide === App.state.totalSlides;
 
     /** if one of those is true decide what to do */
     switch (key) {
       case 'left':
         e.preventDefault();
-        if (App.state.currentSlide === 0) break;
+        if (onFirst) break;
         Slides.requestTransition('prev')
         break
 
       case 'right':
         e.preventDefault();
-        if (App.state.currentSlide === App.state.totalSlides - 1) break;
+        if (onLast) break;
         Slides.requestTransition('next')
         break
 
       case 'home':
         e.preventDefault();
-        if(App.state.currentSlide === 0) break
+        if(onFirst) break
         Slides.requestTransition('first')
         break
 
       case 'end':
         e.preventDefault();
-        if(App.state.currentSlide === App.state.totalSlides) break
+        if(onLast) break
         Slides.requestTransition('last')
         break
 
@@ -1021,14 +1020,14 @@ var Interface = {
       * could be deprecated since there is no way onToggleButtons() is called
       * if there is just one slide to show
      */
-    if (lastSlide === 0 && allDisabled) return;
+    if (lastSlide === 1 && allDisabled) return;
 
     /**
      * should be true just the first time it runs or never.
      * disables all the buttons if there is just one slide to show
      * and the first one is not disabled
      */
-    if (lastSlide === 0 && !allDisabled) {
+    if (lastSlide === 1 && !allDisabled) {
       for (var i = 0; i < allButtons.length; i++) {
         var button = $(allButtons[i]);
         button.addClass('disabled');
@@ -1040,7 +1039,7 @@ var Interface = {
      * check current slideshow status and toggle disable class from buttons
      * if and where needed.
      */ 
-    if (currentSlide === 0) {
+    if (currentSlide === 1) {
       $button.first.addClass('disabled');
       $button.prev.addClass('disabled');
     } else {
@@ -1048,7 +1047,7 @@ var Interface = {
       $button.prev.removeClass('disabled');
     };
 
-    if (currentSlide === (lastSlide - 1)) {
+    if (currentSlide === lastSlide) {
       $button.next.addClass('disabled');
       $button.last.addClass('disabled');
     } else {
