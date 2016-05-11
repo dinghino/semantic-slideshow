@@ -16,7 +16,7 @@ $s1Btn.on('click', function () {
   console.log('You triggered an App event from a slide!')
   $s1Btn.transition('remove looping')
   /** accessing App methods to control the slides */
-  Slides.requestTransition('next')
+  Slides.go('next')
 });
 
 /**
@@ -30,18 +30,19 @@ _slidesEvents = {
         /**
          * hook is called in the first load too, so it can activate stuff
          */
+        console.log('entering first slide')
         setTimeout(function () {
         $s1Btn.transition('set looping').transition('jiggle', '1000ms')
         }, 800);
     },
     onLeave: function () {
+      console.log('leaving first slide')
       /** removing the button looping */
       $s1Btn.transition('remove looping')
-      // console.log('exiting slide 0')
     },
   },
   2: {
-    // onEnter: function () { console.log('entering slide 1') },
+    onEnter: function () { console.log('entering second slide') },
     onLeave: "I'm not a function so I don't count :(",
   }
 };

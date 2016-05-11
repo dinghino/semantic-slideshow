@@ -209,7 +209,7 @@ var App = {
     /** save the time of the App.init to be used in logs and stuff */
     INIT_TIME = new Date().getTime()
     /** merge custom config for the app. used primarly to toggle debugging */
-    if (config) {
+    if (App.config.verbose && config) {
       console.info('custom global config detected! merging', config)
       App.config = Object.assign(App.config, config)
     };
@@ -232,18 +232,19 @@ var App = {
    * @param  {func}   success    called if folderName is found
    * @param  {func}   failure    called if foldername is NOT found
    */
-  validateSlideshowFolder: function (folderName, success, failure) {
+  validateSlideshowFolder: function (folderName, onSuccess, onFail) {
     // define the path to the test file
-    var test = folderName + '/1.html'
+    var test    = folderName + '/1.html',
+        verbose = App.config.verbose;
 
     $.get(test)
     .success(function () {
-        console.info('success in accessing', folderName + '/')
-        if (success) success();
+        if (verbose) console.info(folderName + '/ found! proceeding')
+        if (onSuccess) onSuccess();
       })
     .fail(function () {
-        console.warn('failure in accessing', folderName + '/');
-        if (failure) failure();
+        if (verbose) console.warn(folderName + '/ NOT found! Check it');
+        if (onFail) onFail();
       }
     )
   },
@@ -468,7 +469,7 @@ var Slides = {
   },
 
   getContent: function () {
-    console.log('fetching slides')
+    if (App.config.verbose) console.log('fetching slides')
     // local config
     var frag        = document.createDocumentFragment(),
         hash        = Slides.config.hash,
@@ -586,7 +587,7 @@ var Slides = {
   // request transition {direction} => Interface.handleKeyPress (move function here?)
   // if ok and got {direction} => evaluateTransition and setState with new slides
   // then if state changed should call Slides.render and start animation
-  requestTransition: function (nextSlide) {
+  go: function (nextSlide) {
     // execute the transition
     // Slides.render()
     $(Slides).trigger('request:transition', [nextSlide])
@@ -641,6 +642,12 @@ var Slides = {
     if (typeof prevSlide === 'number') prev = $('#'+ hash + prevSlide);
     if (typeof nextSlide === 'number') next = $('#'+ hash + nextSlide);
 
+    if (next.length === 0 || prev.length === 0) {
+      throw new Error(
+        'Error while trying to animate the slideshow',
+        '\nSeems we couldn\'t find the slides to animate')
+    }
+
     /** set the animations to use for the transition */
     if (prevSlide > nextSlide) {
       transition.leave = Slides.config.transition.left
@@ -651,31 +658,27 @@ var Slides = {
     }
 
     // update DOM
-    if (prev) {
-      prev.transition({
-        animation: transition.leave,
-        // handle the event listeners
-        onStart: function () {
-          /** disable transition controls to avoid mess */
-          Interface.disableTransitions()
-          /** call the onLeave method for current slide */
-          Slides.onLeave(prevSlide)
-        }
-      })
-    }
-    if (next) {
-      next.transition({
-        animation: transition.enter,
-        onStart: function () {
-          /** activate onEnter for nextSlide slide */
-          Slides.onEnter(nextSlide)
-        },
-        // handle the event listeners
-        onComplete: function () {
-          Interface.restoreTransitions()
-        }
-      })
-    }
+    prev.transition({
+      animation: transition.leave,
+      // handle the event listeners
+      onStart: function () {
+        /** disable transition controls to avoid mess */
+        Interface.disableTransitions()
+        /** call the onLeave method for current slide */
+        Slides.onLeave(prevSlide)
+      }
+    })
+    next.transition({
+      animation: transition.enter,
+      onStart: function () {
+        /** activate onEnter for nextSlide slide */
+        Slides.onEnter(nextSlide)
+      },
+      // handle the event listeners
+      onComplete: function () {
+        Interface.restoreTransitions()
+      }
+    })
     App.setState({
       currentSlide: nextSlide,
       prevSlide: prevSlide,
@@ -741,8 +744,8 @@ var Counter = {
 
   /** set the value of the label if present */
   set: function () {
-    var current = parseInt(App.state.currentSlide, 10) + 1,
-        total   = parseInt(App.state.totalSlides, 10),
+    var current = App.state.currentSlide,
+        total   = App.state.totalSlides,
         /** @type {string}  label text */
         text    = current + ' of ' + total,
         /** @type {node} DOM element for the label text */
@@ -833,7 +836,7 @@ var Interface = {
    *                       NOT active the event handlers
    */
   init: function (hide) {
-    console.log('initializing interface')
+    if (App.config.verbose) console.log('initializing interface')
     if(hide) Slides.config.showButtons = false
     /** add basic event listeners */
     Interface.addEventListeners()
@@ -894,16 +897,16 @@ var Interface = {
   /** add functionality to the navigational buttons */
   addNavigationListeners: function () {
     $button.first.on('click', function () {
-      Slides.requestTransition('first')
+      Slides.go('first')
     });
     $button.prev.on('click', function () {
-      Slides.requestTransition('prev')
+      Slides.go('prev')
     });
     $button.next.on('click', function () {
-      Slides.requestTransition('next')
+      Slides.go('next')
     });
     $button.last.on('click', function () {
-      Slides.requestTransition('last')
+      Slides.go('last')
     });
   },
 
@@ -940,25 +943,25 @@ var Interface = {
       case 'left':
         e.preventDefault();
         if (onFirst) break;
-        Slides.requestTransition('prev')
+        Slides.go('prev')
         break
 
       case 'right':
         e.preventDefault();
         if (onLast) break;
-        Slides.requestTransition('next')
+        Slides.go('next')
         break
 
       case 'home':
         e.preventDefault();
         if(onFirst) break
-        Slides.requestTransition('first')
+        Slides.go('first')
         break
 
       case 'end':
         e.preventDefault();
         if(onLast) break
-        Slides.requestTransition('last')
+        Slides.go('last')
         break
 
       case 'toggle':
