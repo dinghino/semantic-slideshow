@@ -156,7 +156,7 @@ var App = {
     /** activate the dimmer if state changed */
     // TODO: passing the state is useless. let the dimmer fetch it from 
     // App.state.dimmer
-    if (d.dimmer) $(Dimmer).trigger('dimmer_set', [{ status: nS.dimmer }])
+    if (d.dimmer) Dimmer.set(nS.dimmer)
     /**
      * if nextSlide changed and is present in nextSlide, render the slides.
      * evaluation of the next slide number is already done. after animating state
@@ -583,13 +583,12 @@ var Slides = {
     }
   },
 
-  // TODO: temporary deprecated. transitions should start HERE
-  // request transition {direction} => Interface.handleKeyPress (move function here?)
-  // if ok and got {direction} => evaluateTransition and setState with new slides
-  // then if state changed should call Slides.render and start animation
+  /**
+   * high level API. tries to move the slides in a direction
+   * @param  {string} nextSlide one of 'next', 'prev', 'first', 'last' 
+   *                            can also be a number to JUMP directly to a slide
+   */
   go: function (nextSlide) {
-    // execute the transition
-    // Slides.render()
     $(Slides).trigger('request:transition', [nextSlide])
   },
 
@@ -769,60 +768,22 @@ var Dimmer = {
       .on('dimmer_set', { status: status }, Dimmer._changeState);
   },
 
-  /** event handlers */
-  _changeState: function (e, data) {
-    /** @type {bool} true activates the dimmer */
-    var request = data.status
-    /** @type {string} 'show' or 'hide' depending on true/false*/
-    var state   = request ? Dimmer.states[0] : Dimmer.states[1]
+  /**
+   * change the state of the dimmer, showing or hiding it
+   * @param  {object} e       event from $.trigger()
+   * @param  {bool}   request true show, false hide
+   */
+  _changeState: function (e, request) {
+    /** @type {string} 'show' or 'hide' depending on true|false */
+    var state;
+
+    if (typeof request === 'boolean') {
+      state = request === true ? Dimmer.states[0] : Dimmer.states[1]
+    } else {
+      state = !App.state.dimmer
+    }
 
     $dimmer.dimmer(state)
-  },
-
-  /** utility methods */
-
-  /**
-   * @DEPRECATED ~ kept as memento.
-   * Can validate a @prop {string} <status> using an array of values
-   * TODO: Move somewhere. can be used to validate transition selection
-   *       & customization, using an array of valid strings.
-   *
-   * Validate the dimmer transitions. true or an error if validation is falsy
-   * @param  {string} status     desired new status to validate. optional
-   * @param  {array}  array      Array of valid values to check with
-   * @return {bool/error}        true if valid, undefined if not
-   *                             will throw an error if not valid
-   */
-  validate: function (status, validationArray) {
-    //  if nothing is passed assume we want to toggle
-    if (!status) return true;
-
-    /** validation rules */
-    var states        = validationArray,
-        isString      = typeof status === 'string',
-        /** actual validation of the passed string */
-        isValid       = (function () {
-          var valid = false
-          for (var i = 0; i < states.length; i++) {
-            if (status === states[i]) valid = true; 
-          }
-          return valid
-        })();
-
-    /** error handling */
-    if (status && !isString) {
-      throw new Error('dimmer received an invalid status property somewhere!')
-    };
-
-    if (status && isString && !isValid) {
-      throw new Error('passed status value to Dimmer is not valid. check')
-    };
-
-    /** everything is valid. return true */
-    if (status && isString && isValid) { return true }
-
-    /** in case something went wrong, throws an error to notify */
-    throw new Error('Something went wrong while validating')
   }
 };
 
@@ -885,9 +846,9 @@ var Interface = {
     /** event for the toggler button */
     $button.toggle.on('click', Interface.toggle);
     /** event for the black screen button */
-    $button.black.on('click', toggleDimmer);
+    $button.black.on('click', Dimmer.set());
     /** event handler for the dimmer click */
-    $dimmer.on('click', toggleDimmer)
+    $dimmer.on('click', Dimmer.set())
 
     /** custom events */
     $(Interface).on('toggleUI', Interface.onToggleUI);
@@ -1068,5 +1029,62 @@ var Interface = {
     Counter.toggle();
     // TODO: invert behaviour. don't set state here
     App.setState({ buttonShown: !state })
+  }
+};
+
+
+/**
+ * STORAGE SECTION
+ *
+ * After here you can find temporary unused functions and methods that are
+ * not deleted because they will be useful in future updates and functionalities
+ * but are not used currently from the app.
+ */
+
+var STORAGE = {
+
+  /** utility methods */
+
+  /**
+   * Can validate a @prop {string} <status> using an array of values
+   * TODO: Move somewhere. can be used to validate transition selection
+   *       & customization, using an array of valid strings.
+   *
+   * Validate the dimmer transitions. true or an error if validation is falsy
+   * @param  {string} status     desired new status to validate. optional
+   * @param  {array}  array      Array of valid values to check with
+   * @return {bool/error}        true if valid, undefined if not
+   *                             will throw an error if not valid
+   */
+  validate: function (status, validationArray) {
+    //  if nothing is passed assume we want to toggle
+    if (!status) return true;
+
+    /** validation rules */
+    var states        = validationArray,
+        isString      = typeof status === 'string',
+        /** actual validation of the passed string */
+        isValid       = (function () {
+          var valid = false
+          for (var i = 0; i < states.length; i++) {
+            if (status === states[i]) valid = true; 
+          }
+          return valid
+        })();
+
+    /** error handling */
+    if (status && !isString) {
+      throw new Error('dimmer received an invalid status property somewhere!')
+    };
+
+    if (status && isString && !isValid) {
+      throw new Error('passed status value to Dimmer is not valid. check')
+    };
+
+    /** everything is valid. return true */
+    if (status && isString && isValid) { return true }
+
+    /** in case something went wrong, throws an error to notify */
+    throw new Error('Something went wrong while validating')
   }
 };
