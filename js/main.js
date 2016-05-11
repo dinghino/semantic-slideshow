@@ -1,5 +1,10 @@
 var $slides_loader;
 
+var APP_CONFIG_DEF = {
+  verbose: false,
+  semanticLog: false
+}
+
 // callback for the success of load 'config.html'
 // will activate the submit button, allowing the loading of slideshows
 function _enableSlideLoader () {
@@ -54,9 +59,7 @@ function _loadApp () {
       $.getScript('js/app.js', function () {
       
       // initialize the app
-      var config = { verbose: true }
-
-      setTimeout(App.init, 10, config);
+      setTimeout(App.init, 5, APP_CONFIG_DEF);
       })
     });
   });

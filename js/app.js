@@ -1,3 +1,6 @@
+
+var I = 0
+
 /**
  * Main application object. Handles events, initialization and general state of
  * the app.
@@ -10,12 +13,21 @@ var App = {
     gitHub: 'https://github.com/dinghino',
     version: '0.9.4'
   },
+  /** utility properties */
+
+  /** @type {Number} define the array length for App._prevStates */
+  _maxStateHistory: 10,
+  /** @type {Array} stores App._maxStateHistory objects, being old App.state */
+  _prevStates: [{ ready: true }] ,
+  /** @type {Object} default global config for the app */
   config: {
     /** {boolean} console log events */
     verbose: false
   },
-  _prevStates: [{ ready: true }] ,
-  // current state of the app
+  /**
+   *  current state of the app. should be handled ONLY with .setState()
+   * @type {Object}
+   */
   state : {
     /** @property {boolean} UI is toggled */
     buttonShown: false,
@@ -36,33 +48,87 @@ var App = {
   },
 
   setState: function (nextState) {
+    var verbose = App.config.verbose;
+
+    verbose ? console.group('[', I++, '] setState. passing', nextState) : null;
+    verbose ? console.error('functions chain') : null;
     // validation for arguments
     if (typeof nextState !== 'object') {
       throw new Error('new state should be an object!')
     };
-
-    var oldState = App.state,
-    /** @type {object} merge the old state with the new props passed */
+    /**
+     * Assign oldState and newState objects properties
+     */
+    var oldState = $.extend(true, {}, App.state),
+        /** @type {object} merge the old state with the new props passed */
         newState = Object.assign(App.state, nextState);
-
-    /** DEBUG: TODO: remove once satifsied */
-    if (App.verbose) {
-      console.warn('=========== updating App.state object ===========')
-      console.info('old state', oldState)
-      console.info('updating with', nextState)
-      console.info('new state', newState)
-    }
 
     /** add last state as first of _prevStates */
     App._prevStates.unshift(oldState)
-    /** if length of array is > 10, remove oldest one */
-    if(App._prevStates.length > 10) { App._prevStates.pop() }
 
+    /** if length of array is > 10, remove oldest one */
+    if(App._prevStates.length > App._maxStateHistory) { App._prevStates.pop() }
+
+    App.checkStateDiffs(oldState, newState)
+    
+    verbose ? console.groupEnd() : null;
     /** update current state with the new object */
     App.state = newState
   },
 
-  __logState: function () { console.log( App.state )},
+  /**
+   * retrieve a state object from the history (_prevStates) or the whole array
+   * if no argument is specified
+   * @param  {number} idx optional. range from 0 to App._maxStateHistory
+   * @return {[type]}     [description]
+   */
+  getOldState: function (idx) {
+    idx = parseInt(idx, 10)
+    console.log(idx, typeof idx, App._prevStates[idx])
+    /** if no idx is passed return the whole array */
+    if(typeof idx !== 'number') return App._prevStates;
+
+    /** @type {Boolean} wether the passed index is a valid OLD App.state  */
+    isOldState = typeof idx === 'number' && 0 >= idx <= App._maxStateHistory;
+
+    if (!isOldState) {
+      var err = 'passed index is not valid. values from 0 to '
+                + App._maxStateHistory + ' are valid';
+
+      throw new Error(err)
+    };
+
+    var oldState = App._prevStates[idx]
+    /** check if it's an object. if not (undefined) */
+    if (typeof oldState === 'object') return oldState;
+    throw new Error('requested old state index do not exists yet.')
+
+  },
+
+  /** evaluate the differences between two state objects */
+  checkStateDiffs: function (prevState, nextState) {
+    var keys    = Object.keys(nextState),
+        verbose = App.config.verbose;
+    
+    // console.log('prevState', prevState)
+    // console.log('nextState', nextState)
+
+    keys.forEach(function (k, i) {
+      if (prevState.hasOwnProperty(k)) {
+        var changed = prevState[k] !== nextState[k];
+        // console.info('prop', k, 'found in prevState:', prevState[k]);
+        changed && verbose
+          ? console.warn('changed', k, 'from', prevState[k], 'to', nextState[k])
+          : null;
+      } else {
+        verbose 
+        ? console.warn('new prop', k,
+          'has ben added to the state: nextState.' + k +':', nextState[k]) 
+        : null;
+      }
+    })
+  },
+
   /**
    * Initialize the whole app, starting sub .init() method, activating event
    * listeners and setting default parameters here and there
@@ -80,7 +146,7 @@ var App = {
     if (App.config.verbose) $.site('enable debug');
 
     /** add custom app event listeners to objects and DOM */
-    App.events()
+    App._events()
     /** set the about section content */
     App.setAboutInfo()
     /** initialize the buttons and their events */
@@ -155,7 +221,7 @@ var App = {
    * event listeners
    */
 
-  events: function () {
+  _events: function () {
     $(App)
     .on('setSlideConfig', App._onSetConfig)
     .on('loadSlides', App._onLoadSlides)
@@ -321,7 +387,6 @@ var Slides = {
 
     return $('<div>', {
       id: hash + idx,
-      // TODO: use semantic-ui transitions setting initial status
       class: idx > 0 ? 'transition hidden' : 'transition visible',
       style: idx === 0 ? 'display: -webkit-flex!important; display: flex!important' : ''
     })[0]
@@ -363,7 +428,7 @@ var Slides = {
       .fail(function (e) {
         /** error handling */
         var error = handleError(e)
-        if (error) { throw new Error(error) }
+        if (error) throw new Error(error);
 
         /**
          * Since fail means that there are no more slides to load, 
@@ -556,11 +621,15 @@ var Slides = {
       })
     }
     Interface.toggleButtons()
-    App.setState({currentSlide: nextSlide, prevSlide: prevSlide })
+    App.setState({
+      currentSlide: nextSlide,
+      prevSlide: prevSlide,
+      nextSlide: undefined
+    })
 
     Slides.config.showCounter ? Counter.set() : null
 
-    setTimeout(Slides.updateHash, 100)
+    setTimeout(Slides.updateHash, 50)
   },
 
   /**
@@ -655,17 +724,18 @@ var Dimmer = {
           isValid = Dimmer.validate(data.status);
 
       if (typeof isValid === 'object') { console.error(isValid) }
-      if (isValid !== true) { console.warn('error in validation?', isValid); return }
 
-      if (!data.status) {
-        Dimmer.toggle()
-        App.setState({
-          dimmer: currentState === 'show' ? 'hide' : 'show'
-        })
+      if (isValid !== true) {
+        console.warn('error in validation?', isValid);
         return
       };
 
-      $dimmer.dimmer(data.status)
+      if (!data.status) {
+        Dimmer.toggle();
+        return
+      };
+
+      $dimmer.dimmer(data.status);
       App.setState({ dimmer: data.status });
   },
 
