@@ -23,7 +23,8 @@ var App = {
   /** @type {Object} default global config for the app */
   config: {
     /** {boolean} console log events */
-    verbose: false
+    verbose: false,
+    semanticLog: true
   },
   /**
    *  current state of the app. should be handled ONLY with .setState()
@@ -154,15 +155,16 @@ var App = {
         d       = diff;
 
     /** activate the dimmer if state changed */
-    // TODO: passing the state is useless. let the dimmer fetch it from 
-    // App.state.dimmer
     if (d.dimmer) Dimmer.set(nS.dimmer)
+
     /**
      * if nextSlide changed and is present in nextSlide, render the slides.
      * evaluation of the next slide number is already done. after animating state
      * will get the new current (should be old next), new prev and undefined next
      */
     if (d.nextSlide && nS.nextSlide) Slides.render()
+
+    if (d.buttonShown) Interface.toggleUI() // TODO: give it a proper method in Interface
   },
 
   /**
@@ -184,9 +186,8 @@ var App = {
 
     console.groupCollapsed(
       '[%s][%d] updating state with %d changes:', 
-      timestamp, I++, propsChanged, nextState
-     )
-      console.error('functions chain. identify the caller')
+      timestamp, I++, propsChanged, nextState)
+      console.trace('update callers chain')
       console.groupCollapsed('changes table')
         console.table(changes)
       console.groupEnd()
@@ -209,7 +210,7 @@ var App = {
     /** save the time of the App.init to be used in logs and stuff */
     INIT_TIME = new Date().getTime()
     /** merge custom config for the app. used primarly to toggle debugging */
-    if (App.config.verbose && config) {
+    if (config) {
       console.info('custom global config detected! merging', config)
       App.config = Object.assign(App.config, config)
     };
@@ -254,14 +255,20 @@ var App = {
    */
 
   /** load a slideshow with the given total slides and configuration */
-  loadSlideshow: function (config) { $(App).trigger('loadSlides', [config]) },
+  loadSlideshow: function (config) {
+    $(App).trigger('app:loadSlides', [config])
+  },
   /** update Slides.config object with custom config */
-  updateConfig: function (config) {$(App).trigger('setSlideConfig', [config]) },
+  updateConfig: function (config) {
+    $(App).trigger('app:set-slide-config', [config])
+  },
   /** get the custom script file from the slideshow folder 
    * @param  {string} fileName will be used in a later release,
    *                           allowing custom names for script.js
    */
   fetchEvents: function (fileName) {
+    var verbose = App.config.verbose;
+
     if (!fileName) fileName = 'script'
 
     if (!Slides.config.getEvents) {
@@ -271,24 +278,22 @@ var App = {
 
     $.getScript(path)
     .done(function (script, status) {
-      console.info('script found!', status, 'activating.')
+      if (verbose) console.info('script found!', status, 'activating.')
       App.enableEvents()
     })
     .fail(function (jqxhr, settings, exception) {
-      console.warn(
+      if (verbose) console.warn(
         'no extra script found in "' + Slides.config.folder + '/"', jqxhr.status
       )
       App.slidesReady()
     });
   },
   /** enable custom events */
-  enableEvents: function () { $(App).trigger('enableCustomEvents') },
+  enableEvents: function () { $(App).trigger('app:enable-custom-events') },
   /** finalize the initialization of the slides */
-  slidesReady: function () { $(App).trigger('slideShowReady') },
+  slidesReady: function () { $(App).trigger('app:slides-ready') },
   /** finalize initialization of the whole app */
-  finalizeApp: function () { $(App).trigger('finalizeAppInit') },
-  /**  move the slides */
-  go: function (direction) { $(App).trigger('moveTo', [direction]) },
+  finalizeApp: function () { $(App).trigger('app:finalize-init') },
 
   /**
    * event listeners
@@ -296,12 +301,11 @@ var App = {
 
   _events: function () {
     $(App)
-    .on('setSlideConfig', App._onSetConfig)
-    .on('loadSlides', App._onLoadSlides)
-    .on('slideShowReady', App._onSlideShowReady)
-    .on('finalizeAppInit', App._onFinalizeInit)
-    .on('moveTo', App._onMoveTo)
-    .on('enableCustomEvents', App._onEnableEvents)
+    .on('app:set-slide-config', App._onSetConfig)
+    .on('app:loadSlides', App._onLoadSlides)
+    .on('app:slides-ready', App._onSlideShowReady)
+    .on('app:finalize-init', App._onFinalizeInit)
+    .on('app:enable-custom-events', App._onEnableEvents)
   },
 
   /**
@@ -318,7 +322,7 @@ var App = {
     Slides.config = Object.assign(Slides.config, config)
   },
   _onSlideShowReady: function (e) {
-    Interface.toggleButtons()
+    Interface.updateButtons()
     // if custom events are present in config and not yet executed run that
     // first before finalizing initialization
     if(Slides.config.events && !App.state.events) {
@@ -336,9 +340,9 @@ var App = {
 
     // set initial state for the buttons.
     // if necessary do stuff to the UI
-    if (Slides.config.showCounter && !App.state.initialized) Counter.init();
+    Counter.init();
     if (Slides.config.showButtons && !App.state.initialized) {
-      setTimeout(Interface.toggle, 250);
+      setTimeout(Interface.toggle, 150);
     };
 
     // remove the dimmer
@@ -351,11 +355,6 @@ var App = {
 
     // call the onEnter event for the first slide after loading
     Slides.onEnter(App.state.currentSlide)
-  },
-  _onMoveTo: function (e, nextPosition) {
-    // move to a direction
-    Slides.evaluateTransition(nextPosition)
-    Slides.render()
   },
   _onEnableEvents: function (e) {
     console.log('activating events')
@@ -419,10 +418,7 @@ var Slides = {
     getEvents: false,
 
     /** start with button toggled on or off */
-    showButtons: true,
-
-    /** create and use the counter for the slides */
-    showCounter: true,
+    showButtons: true
   },
 
   /**
@@ -453,7 +449,7 @@ var Slides = {
   },
 
   addEventListeners: function () {
-    $(Slides).on('request:transition', Slides.evaluateTransition)
+    $(Slides).on('slides:request-transition', Slides.evaluateTransition)
   },
 
   _createSlide: function (idx)  {
@@ -555,13 +551,34 @@ var Slides = {
     /** local variables */
     var currentSlide = App.state.currentSlide,
         lastSlide    = App.state.totalSlides,
-        direction    = data
+        request      = data;
+
+    /** validate and request transition if typeof data === number */
+    if (typeof request === 'number') {
+      if (request > 0 && request <= lastSlide) {
+       App.setState({ nextSlide: request })
+       return
+      }
+
+      if (request < 1) {
+        console.warn('requested an invalid slide: #%d. going to first', request)
+        App.setState({ nextSlide: 1 })
+        return
+      }
+
+      if (request > lastSlide) {
+        console.warn('requested slide [%d] do not exists. going to last', request)
+        App.setState({ nextSlide: lastSlide})
+        return
+      }
+      throw new Error('was trying to go slide %s, but it seems you crashed me.')
+    }
 
     /**
      * update object properties depending on where we are going.
      * if case is no match throw an error | shouldn't happen from UI
      */
-    switch (direction) {
+    switch (request) {
       case 'next':
         App.setState({ nextSlide: currentSlide + 1 })
         break
@@ -585,11 +602,12 @@ var Slides = {
 
   /**
    * high level API. tries to move the slides in a direction
-   * @param  {string} nextSlide one of 'next', 'prev', 'first', 'last' 
-   *                            can also be a number to JUMP directly to a slide
+   * @param  {string|number} nextSlide one of 'next', 'prev', 'first', 'last' 
+   *                                   can also be a number to JUMP directly
+   *                                   to a slide passing a number.
    */
   go: function (nextSlide) {
-    $(Slides).trigger('request:transition', [nextSlide])
+    $(Slides).trigger('slides:request-transition', [nextSlide])
   },
 
   onEnter: function (slide) {
@@ -637,7 +655,11 @@ var Slides = {
           leave: ''
         };
 
-    /** get the dom elements corresponding the slides to animate */
+    /** 
+     * Get the dom elements corresponding the slides to animate. also works as
+     * validator for the passed values
+     * @type {[type]}
+     */
     if (typeof prevSlide === 'number') prev = $('#'+ hash + prevSlide);
     if (typeof nextSlide === 'number') next = $('#'+ hash + nextSlide);
 
@@ -678,19 +700,19 @@ var Slides = {
         Interface.restoreTransitions()
       }
     })
+
+    /** update the state object with the new slides status */
     App.setState({
       currentSlide: nextSlide,
       prevSlide: prevSlide,
       nextSlide: undefined
     })
 
-    Slides.config.showCounter ? Counter.set() : null
 
-    /** wait to update buttons and hash, giving the state time tu update */
-    setTimeout(function () {
-      Interface.toggleButtons()
-      Slides.updateHash()
-    }, 50)
+    /** call update UI with the new state */
+    Counter.set()
+    Interface.updateButtons()
+    Slides.updateHash()
   },
 
   /**
@@ -707,38 +729,8 @@ var Slides = {
 
 var Counter = {
   init: function () {
-    /** @type {node} create label into the DOM and return the element */
-    label = Counter.create()
-
-    /** add the label to the $button object to be easily used */
-    $button.jump = $(label)
-    
-    /** activate the onClick event */
-    $(label).on('click', function (e) {
-      e.preventDefault()
-      // temporary assignment until jump functionality is implemented
-      console.info('clicked the counter! Jump functionality coming soon!')
-    })
-    
     /** set counter initial state */
     Counter.set()
-  },
-
-  create: function () {
-    /** create counter elements */
-    var label = $('<a>', {
-      class:'ui left pointing grey basic label',
-      'data-role': 'jumpToSlide' 
-    })
-    var labelIcon = $('<i>', { class: 'slack icon' })
-    var labelText = $('<span>', { class: 'labelText'})
-
-    /** append elements to the DOM inside the counter container */
-    $counter.append(label)
-    $(label).append(labelIcon).append(labelText)
-
-    /** return the label element */
-    return label
   },
 
   /** set the value of the label if present */
@@ -752,6 +744,7 @@ var Counter = {
 
     /** update the label value */
     $($label[0]).text(text)
+    $jumperInput.val(current)
   },
   toggle: function () { $counter.transition('fly up') }
 }
@@ -760,12 +753,11 @@ var Dimmer = {
   states: ['show', 'hide'],
   
   /** triggers */
-  set: function (status) { $(Dimmer).trigger('dimmer_set', [status]) },
-
+  set: function (status) { $(Dimmer).trigger('dimmer:set', [status]) },
+  toggle: function () { App.setState({ dimmer: !App.state.dimmer }) },
   /** add event listeners */
   init: function () {
-    $(Dimmer)
-      .on('dimmer_set', { status: status }, Dimmer._changeState);
+    $(Dimmer).on('dimmer:set', { status: status }, Dimmer._changeState)
   },
 
   /**
@@ -775,16 +767,11 @@ var Dimmer = {
    */
   _changeState: function (e, request) {
     /** @type {string} 'show' or 'hide' depending on true|false */
-    var state;
-
-    if (typeof request === 'boolean') {
-      state = request === true ? Dimmer.states[0] : Dimmer.states[1]
-    } else {
-      state = !App.state.dimmer
-    }
+    var state = request === true ? Dimmer.states[0] : Dimmer.states[1]
 
     $dimmer.dimmer(state)
-  }
+  },
+
 };
 
 /**
@@ -793,19 +780,18 @@ var Dimmer = {
 var Interface = {
   /**
    * initialize the buttons with their events called from Slides.
-   * @param {boolean} hide if true will hide the buttons and 
-   *                       NOT active the event handlers
    */
-  init: function (hide) {
+  init: function () {
     if (App.config.verbose) console.log('initializing interface')
-    if(hide) Slides.config.showButtons = false
-    /** add basic event listeners */
-    Interface.addEventListeners()
+
     /** initialize interface with semantic-ui modules */
     Interface.enableSemanticModules()
 
     /** initialize the dimmer */
     Dimmer.init()
+
+    /** add basic event listeners */
+    Interface.addEventListeners()
   },
 
   /** Activate slideshow UI semantic-ui modules */
@@ -820,16 +806,20 @@ var Interface = {
       onHide: function () { $authorAccordion.accordion('close', 0) }
     });
 
+    $($counterLabel).popup({
+      on: 'click',
+      inline: true
+    })
+
     /** about & contacts accordion */
     $authorAccordion.accordion()
     /** dimmer settings */
-    $dimmer
-      .dimmer({
-        duration: {
-          show: 500,
-          hide: 500
-        }
-      })
+    $dimmer.dimmer({
+      duration: {
+        show: 500,
+        hide: 500
+      }
+    })
   },
 
   /** basic event listeners for the UI */
@@ -840,19 +830,28 @@ var Interface = {
       App.setState({ dimmer: !App.state.dimmer })
     };
 
+    /** custom events */
+    $(Interface).on('interface:toggle', Interface.onToggleUI);
+    $(Interface).on('interface:update-btns', Interface.onToggleButtons);
+
     /** click events for slides buttons */
     Interface.addNavigationListeners();
 
     /** event for the toggler button */
     $button.toggle.on('click', Interface.toggle);
     /** event for the black screen button */
-    $button.black.on('click', Dimmer.set());
+    $button.black.on('click', Dimmer.toggle);
     /** event handler for the dimmer click */
-    $dimmer.on('click', Dimmer.set())
+    $dimmer.on('click', Dimmer.toggle)
 
-    /** custom events */
-    $(Interface).on('toggleUI', Interface.onToggleUI);
-    $(Interface).on('setButtonsClass', Interface.onToggleButtons);
+    $button.jump.on('click', function () {
+      var nextSlide = $jumperInput.val();
+      isInvalid = !nextSlide || isNaN(parseInt(nextSlide))
+      if (isInvalid) return
+      console.log(nextSlide)
+      Slides.go(parseInt(nextSlide))
+    })
+
   },
  
   /** add functionality to the navigational buttons */
@@ -963,8 +962,11 @@ var Interface = {
   },
 
   /** event triggers */
-  toggleButtons: function () { $(Interface).trigger('setButtonsClass') },
-  toggle: function () { $(Interface).trigger('toggleUI') },
+
+  updateButtons: function () { $(Interface).trigger('interface:update-btns') },
+  toggleUI: function () { $(Interface).trigger('interface:toggle') },
+
+  toggle: function () { App.setState({buttonShown: !App.state.buttonShown }) },
 
   /** event handlers */
 
@@ -1024,11 +1026,9 @@ var Interface = {
    */
   onToggleUI: function () {
     var state = App.state.buttonShown;
-    Slides.config.debug ? console.log('App current state', App.state) : null;
+
     $button.wrapper.transition('fly left');
     Counter.toggle();
-    // TODO: invert behaviour. don't set state here
-    App.setState({ buttonShown: !state })
   }
 };
 

@@ -59,6 +59,10 @@ body {
 
 /* Flexible Box Model */
 [data-role="slides"] > div {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+
   display: -webkit-flex;
   -webkit-justify-content: center;
   -webkit-align-content: center;
@@ -70,10 +74,4 @@ body {
   align-content: center;
   align-items: center;
   flex-wrap: wrap;
-}
-
-[data-role="slides"] > div {
-  position: absolute;
-  height: 100%;
-  width: 100%;
 }

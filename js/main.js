@@ -7,13 +7,12 @@ var APP_CONFIG_DEF = {
 
 // callback for the success of load 'config.html'
 // will activate the submit button, allowing the loading of slideshows
-function _enableSlideLoader () {
+function _slideLoader () {
   $slides_loader.on('click', function (e) {
     e.preventDefault();
 
     var folder      = $('input[name="folderName"]').val(),
         hash        = $('input[name="pageHash"]').val(),
-        counter     = $('input[name="counterToggle"]').is(':checked'),
         controls    = $('input[name="controlsToggle"]').is(':checked'),
         loadScript  = $('input[name="loadCustomScript"]').is(':checked');
 
@@ -22,8 +21,7 @@ function _enableSlideLoader () {
       getEvents: loadScript,
       folder: folder,
       hash: hash,
-      showButtons: controls,
-      showCounter: counter
+      showButtons: controls
     };
 
     /** calback functions for App.validateSlideshowFolder */
@@ -76,7 +74,7 @@ $(document).ready(function () {
     /** initialization for loading screen */
     $('.ui.checkbox').checkbox()
     $('[data-role="configSettingsAccordion"]').accordion()
-    _enableSlideLoader()
+    _slideLoader()
 
     /** load the rest of the UI and start initializing the application */
     _loadApp()

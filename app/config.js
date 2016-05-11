@@ -17,6 +17,11 @@ $button.next      = $('[data-role="btnNext"]');
 $button.last      = $('[data-role="btnLast"]');
 /** ui toggler */
 $button.toggle    = $('[data-role="toggle"]')
+/** counter components */
+$counterLabel     = $('[data-role="jumpToSlide"]')
+
+$jumperInput      = $('[data-role="jumperInput"]')
+$button.jump      = $('[data-role="jumperBtn"]')
 
 /** about spaces in the UI */
 about             = {};

@@ -81,7 +81,22 @@
     </div>
   </div>
   <!-- slides counter goes here -->
-  <div data-role="counter" class="transition hidden"></div>
+  <div data-role="counter" class="transition hidden">
+    <a data-role="jumpToSlide" class="ui left pointing grey basic label">
+      <i class="slack icon"></i>
+      <span class="labelText"></span>
+    </a>
+    <div data-role="jumperPopup" class="ui popup">
+      <h4 class="ui header">direct jump</h4>
+      <div class="ui mini action input">
+        <input type="text" data-role="jumperInput" name="slideJumper">
+        <div data-role="jumperBtn" class="ui small blue right labeled icon button">
+          <i class="right inverted blue chevron icon"></i>
+          GO
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- action buttons are here -->
   <div data-role="buttons" class="ui compact basic buttons transition hidden">
     <button data-role="btnFirst" class="ui icon button active">
