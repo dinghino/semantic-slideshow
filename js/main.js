@@ -1,12 +1,24 @@
+/**
+ * @file
+ * Entry point for the application. imports are violently done with $.get and
+ * $.getScript jQuery methods
+ */
+
 var $slides_loader;
 
+/**
+ * Default config object for App.init()
+ * @type {Object}
+ */
 var APP_CONFIG_DEF = {
   verbose: false,
   semanticLog: false
 }
 
-// callback for the success of load 'config.html'
-// will activate the submit button, allowing the loading of slideshows
+/**
+ * callback for the success of load 'config.html'
+ * will activate the submit button, allowing the loading of slideshows
+ */
 function _slideLoader () {
   $slides_loader.on('click', function (e) {
     e.preventDefault();
@@ -48,6 +60,10 @@ function _slideLoader () {
   });
 }
 
+/**
+ * load all the ui components, configs and app file
+ * @return {[type]} [description]
+ */
 function _loadApp () {
   // fetch the UI and load it into the page
   $('[data-role="slidesInterface"]').load("app/ui.html", function () {
@@ -55,7 +71,7 @@ function _loadApp () {
     $.getScript('app/config.js', function () {
       // fetch app.js
       $.getScript('js/app.js', function () {
-      
+
       // initialize the app
       setTimeout(App.init, 5, APP_CONFIG_DEF);
       })

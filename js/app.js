@@ -1,3 +1,25 @@
+/**
+ * @file
+ * HTML Slideshow presenter.
+ * This whole app is a style execrise to regain confidence with javascript ES5,
+ * jQuery and semantic-ui framework. It's purpose is to have an instrument to
+ * create an slideshow using simple <tt>HTML</tt> pages and <tt>javascript</tt>
+ * configuration files and settings. This can allow a developer to quickly create
+ * an insider slideshow to show progress on some code, live while presenting, to
+ * have multiple team members create multiple slides that can work together with
+ * no issues...
+ * The App itself is a central state managed application, that uses
+ * <tt>{@link App.setState}</tt> to modify the current state and triggers, if
+ * needed, behaviours into the initialized main components (<tt>namespaces</tt>)
+ * It dynamically loads slideshows and scripts from a specified folder.
+ */
+
+// NOTE: **developing information for documentation**
+// jsdoc terminal call from ./semantic-slideshow:
+// jsdoc ./js/app.js ./js/main.js ./app/config.js -d ./docs -t ../../node_modules/minami
+// evaluate this file, main.js and config.js from ./app
+// uses minami template from wamp/node_modules and put everything in semantic-slideshow/docs
+
 
 var I = 0
 var INIT_TIME
@@ -5,50 +27,106 @@ var INIT_TIME
 /**
  * Main application object. Handles events, initialization and general state of
  * the app.
+ * This is the primary interface for the user to handle changes in the application
+ * using App.setState() method.
+ *
+ * @version 0.9.4
+ * @author Daniele Calcinai
+ * @namespace
  */
 var App = {
-  // author info
+  /**
+   * author information and contacts. used to populate the about section
+   * @type {Object}
+   * @private
+   */
   info: {
     author: 'Daniele Calcinai',
     email: 'dinghino@gmail.com',
     gitHub: 'https://github.com/dinghino',
     version: '0.9.4'
   },
-  /** utility properties */
-
-  /** @type {Number} define the array length for App._prevStates */
+  /**
+   * Define the array length for App._prevStates
+   * @type {Number}
+   * @private
+   */
   _maxStateHistory: 10,
-  /** @type {Array} stores App._maxStateHistory objects, being old App.state */
-  _prevStates: [{ ready: true }] ,
-  /** @type {Object} default global config for the app */
+  /**
+   * stores App._maxStateHistory objects, being old App.state
+   * @type {Array}
+   * @private
+   */
+  _prevStates: [{ ready: true }],
+  /**
+   * Default global config for the app that can be overridden while calling
+   * {@link App.init}
+   * @type {Object}
+   */
   config: {
-    /** {boolean} console log events */
+    /**
+     * Log events from the app, including detailed state changes
+     * @type {Boolean}
+     */
     verbose: false,
+    /**
+     * Turn on the semantic-ui default debugger. can't be set after calling {@link App.init}
+     * @type {Boolean}
+     */
     semanticLog: true
   },
   /**
-   *  current state of the app. should be handled ONLY with .setState()
-   * @type {Object}
+   * Current state of the app. should be handled <strong>ONLY</strong> with .setState()
    */
   state : {
-    /** @property {boolean} UI is toggled */
+    /**
+     * <tt>true</tt> if UI is toggled
+     * @type {Boolean}
+     */
     buttonShown: false,
-    /** @property {boolean} app initialization status */
+    /**
+     * <tt>true</tt> if app is initialized. internally managed
+     * @type {Boolean}
+     */
     initialized: false,
-    /** @property {boolean} true if custom events are present and ready */
+    /**
+     * <tt>true</tt> if custom events are present and initialized
+     * @type {Boolean}
+     */
     events: false,
-    /** @property {bool} true if active, false if hidden */
+    /**
+     * <tt>true</tt> if active
+     * @type {Boolean}
+     */
     dimmer: false,
-    /** @type {Number} total number of slides */
+    /**
+     * Total number of slides in the current slideshow
+     * @type {Number}
+     */
     totalSlides: 0,
-    /** @property {number} currently shown slide */
+    /**
+     * currently shown slideshow
+     * @type {Number}
+     */
     currentSlide: 1,
-    /** @type {number} previously shown slide ~ used and set in transitions */
+    /**
+     * previous slide shown. Used and set in transitions
+     * @type {Number}
+     */
     prevSlide: undefined,
-    /** @type {number} next slide to show ~ used and set in transitions */
+    /**
+     * Next slide to show. Usually set with {@link Slides.go} and used in transitions
+     * @type {Number}
+     */
     nextSlide: undefined
   },
 
+  /**
+   * Primary API for the application. changes the internal state object.
+   * Has different callbacks for default and user definable actions based on
+   * state changes
+   * @param {object} nextState requested changes in the application
+   */
   setState: function (nextState) {
     var verbose = App.config.verbose;
     if(verbose) console.time('this set state took');
@@ -62,7 +140,7 @@ var App = {
      * Assign oldState and newState objects properties
      */
     var prevState = $.extend(true, {}, App.state),
-        /** @type {object} merge the old state with the new props passed */
+        /** {object} merge the old state with the new props passed */
         newState = Object.assign(App.state, nextState);
 
     /** add last state as first of _prevStates */
@@ -73,14 +151,17 @@ var App = {
 
     /**
      * check the changes in the state and return a diff object
-     * @type {objects} differences between old state and new state
+     * {objects} differences between old state and new state
      *                 diff is structured as diff[propName]: {prev, next}
      */
     var diff = App.checkStateDiffs(prevState, newState)
     /** if requested log the state update informations */
     if (verbose) App.__setStateLog(prevState, nextState, diff, newState)
 
-    /** update current state with the new object */
+    /**
+     * update current state with the new object
+     * @private
+     */
     App.state = newState
 
 
@@ -95,13 +176,12 @@ var App = {
    * retrieve a state object from the history (_prevStates) or the whole array
    * if no argument is specified
    * @param  {number} idx optional. range from 0 to App._maxStateHistory
-   * @return {[type]}     [description]
    */
   getOldState: function (idx) {
     /** if no idx is passed return the whole array */
     if(typeof idx !== 'number') return App._prevStates;
 
-    /** @type {Boolean} wether the passed index is a valid OLD App.state  */
+    /** {Boolean} wether the passed index is a valid OLD App.state  */
     isOldState = typeof idx === 'number' && 0 >= idx <= App._maxStateHistory;
 
     if (!isOldState) {
@@ -121,7 +201,15 @@ var App = {
     throw new Error('requested old state index do not exists yet.')
   },
 
-  /** evaluate the differences between two state objects */
+  /**
+   * evaluate the differences between two state objects
+   * @private
+   * @param  {object} prevState - a previous state of the app
+   * @param  {object} nextState - a next state of the app
+   * @return {object|Boolean}     if diffs exists return an object containing
+   *                                the differences from prevState to nextState
+   *                                otherwhise return false
+   */
   checkStateDiffs: function (prevState, nextState) {
     var keys    = Object.keys(nextState),
         getDiff = false
@@ -134,7 +222,7 @@ var App = {
 
       if (changed) {
       getDiff = true;
-      /** @type {Object} store changes informations */
+      /** {Object} store changes informations */
       var change  = { previous: prevState[k], next: nextState[k] };
 
       /** assign newly created object to changes[k] */
@@ -143,12 +231,20 @@ var App = {
     })
     /** return the objects containing the changes */
     if(getDiff) return changes
+    return false
   },
 
-  /** default behaviour on state changes. triggers app events */
-  // TODO: Move all (main) triggers here
+  /**
+   * Default behaviour on state changes. triggers app events.
+   * should only be used internally and not accessed from the user
+   * @param  {object} prevState previous state of the app
+   * @param  {object} nextState next state of the app
+   * @param  {object} diff      must contains the diffs within the
+   *                            <strong>passed</strong> states
+   * @private
+   */
   onStateChange: function (prevState, nextState, diff) {
-    /** @type {array} property changed */
+    /** {array} property changed */
     var changed = Object.keys(diff),
         pS      = prevState,
         nS      = nextState,
@@ -164,28 +260,34 @@ var App = {
      */
     if (d.nextSlide && nS.nextSlide) Slides.render()
 
-    if (d.buttonShown) Interface.toggleUI() // TODO: give it a proper method in Interface
+    if (d.buttonShown) Interface.toggleUI() // @TODO: give it a proper method in Interface
   },
 
   /**
-   * similar to react's componentDidUpdate, is called after the app updated
+   * Similar to react's componentDidUpdate, is called after the app updated
    * its state and the old state is set to into the history
-   * @param  {[type]} prevState [description]
-   * @return {[type]}           [description]
+   * @param  {object} prevState App.state before the update
    */
   didUpdate: function (prevState) {
-    // user definable function, can be used to trigger stuff
-    // if App.state[prop] !== prevState[prop]
+    // user definable function, can be used to trigger stuff if App.state[prop] !== prevState[prop]
   },
 
-  /** be verbose about changes in App.state and go full console! */
+  /**
+   * be verbose about changes in App.state and go full console!
+   * Must be called after the {@link App.setState} completed the update
+   * @private
+   * @param  {object} oldState  - the immediately previous state of the app
+   * @param  {object} nextState - the changes that triggered the state change
+   * @param  {object} changes   - a diff object created with {@link App.checkStateDiffs}
+   * @param  {object} newState  - the newly created state
+   */
   __setStateLog: function (oldState, nextState, changes, newState) {
     var propsChanged = changes ? Object.keys(changes).length : 0,
         now          = new Date().getTime(),
         timestamp    = ((now - INIT_TIME) / 1000).toFixed(3) + 's'
 
     console.groupCollapsed(
-      '[%s][%d] updating state with %d changes:', 
+      '[%s][%d] updating state with %d changes:',
       timestamp, I++, propsChanged, nextState)
       console.trace('update callers chain')
       console.groupCollapsed('changes table')
@@ -203,8 +305,8 @@ var App = {
   /**
    * Initialize the whole app, starting sub .init() method, activating event
    * listeners and setting default parameters here and there
-   * @param  {object} config configuration object for the app
-   * @return {[type]}        [description]
+   * @param  {object} [config] configuration object for the app. will merge with {@link App.config}
+   * @private
    */
   init: function (config) {
     /** save the time of the App.init to be used in logs and stuff */
@@ -227,11 +329,13 @@ var App = {
   },
 
   /**
-   * validate the selected folder before calling App.loadSlideshow()
-   * avoiding unwanted initialization
+   * validate the selected folder name trying to GET file <tt>1.html</tt>.
+   * Method is used before calling {@link App.loadSlideshow} to verify that the
+   * folder exists, avoiding unwanted initialization.
    * @param  {string} folderName folder to validate
    * @param  {func}   success    called if folderName is found
    * @param  {func}   failure    called if foldername is NOT found
+   * @private
    */
   validateSlideshowFolder: function (folderName, onSuccess, onFail) {
     // define the path to the test file
@@ -254,51 +358,87 @@ var App = {
    * event triggers
    */
 
-  /** load a slideshow with the given total slides and configuration */
+  /**
+   * Triggers the loading of a slideshow, using the passed config object to
+   * set it up
+   * @param  {object} config The configuration file for the slideshow
+   *                         is compiled from the UI form and dispatched
+   *                         when the slideshow has been validated.
+   */
   loadSlideshow: function (config) {
     $(App).trigger('app:loadSlides', [config])
   },
-  /** update Slides.config object with custom config */
+
+  /**
+   * Triggers the update {@link Slides.config} merging the passed config object
+   * @param  {object} config config object as in {@link App.loadSlideshow}
+   * @private
+   */
   updateConfig: function (config) {
     $(App).trigger('app:set-slide-config', [config])
   },
-  /** get the custom script file from the slideshow folder 
-   * @param  {string} fileName will be used in a later release,
-   *                           allowing custom names for script.js
+
+  /**
+   * Try to get the custom script file from the slideshow folder then, depending
+   * the result of $.getScript(), proceed initializing it or directly to app
+   * finalization
+   *
+   * @param  {string} fileName will be used in a later release allowing custom names for script.js
+   * @private
    */
   fetchEvents: function (fileName) {
     var verbose = App.config.verbose;
-
+    // default fileName to fetch the script
     if (!fileName) fileName = 'script'
 
+    // if getEvents is true don't even try to fetch the custom .js
     if (!Slides.config.getEvents) {
-      return App.slidesReady()
+      App.slidesReady();
+      return
     }
+    // create the path-to-file for the custom script
     var path = Slides.config.folder + '/' + fileName + '.js'
 
+    // try to get the script. if success enable it, else jump to finalizing
     $.getScript(path)
     .done(function (script, status) {
       if (verbose) console.info('script found!', status, 'activating.')
-      App.enableEvents()
+      App.enableEvents();
     })
     .fail(function (jqxhr, settings, exception) {
       if (verbose) console.warn(
         'no extra script found in "' + Slides.config.folder + '/"', jqxhr.status
       )
-      App.slidesReady()
+      App.slidesReady();
     });
   },
-  /** enable custom events */
+
+  /**
+   * If called try to enable the custom script file, searching for the config object
+   * in <tt>window._slidesEvents</tt>, storing it in <tt>Slides.config.events</tt>
+   * and, just to be sure, if it's not an object but a function try to run it.
+   * @private
+   */
   enableEvents: function () { $(App).trigger('app:enable-custom-events') },
-  /** finalize the initialization of the slides */
+
+  /**
+   * Confirm the activation of custom events in {@link Slides.config} or
+   * finalize the app initialization
+   * @private
+   */
   slidesReady: function () { $(App).trigger('app:slides-ready') },
-  /** finalize initialization of the whole app */
+
+  /**
+   * Finalize the initialization of the app, setting initial things, removing the
+   * dimmer and calling the first slides onEnter event (if present)
+   * @private
+   */
   finalizeApp: function () { $(App).trigger('app:finalize-init') },
 
   /**
-   * event listeners
+   * Adds custom event listeners to {@link App}, created with jQuery.
+   * @private
    */
-
   _events: function () {
     $(App)
     .on('app:set-slide-config', App._onSetConfig)
@@ -309,9 +449,13 @@ var App = {
   },
 
   /**
-   * event handlers
+   * Internal event handlers that are used to perfom some basic actions like
+   * updating the {@link App} config and/or trigger other events to chain them
+   * in a proper workflow
+   * @TODO: create comments for each one of these so it's easier to know what they
+   * do. make them if seems the right thing to do.
+   * @private
    */
-
   _onLoadSlides: function (e, config) {
     // initia lizing slideshow
     App.updateConfig(config)
@@ -351,7 +495,7 @@ var App = {
         dimmer: false,
         initialized: true
       })
-    }, 750)
+    }, 600)
 
     // call the onEnter event for the first slide after loading
     Slides.onEnter(App.state.currentSlide)
@@ -362,8 +506,10 @@ var App = {
     var events = Slides.config.events
     // if events exists and is  function execute.
     // timeout is needed for the DOM creation
-    events && typeof events === 'function' ? setTimeout(events, 50) : null
-    
+    events && typeof events === 'function'
+      ? setTimeout(events, 50)
+      : null
+
     // set events as executed
     App.setState({ events: true })
     // run init validation again
@@ -374,12 +520,25 @@ var App = {
    * utility methods
    */
 
-  /** get the about info and set them into the page */
-  setAboutInfo: function () {
-    var info = App.info
+  /**
+   * Update the about section of the application using the information stored
+   * inside {@link App.info} or a custom info object. can be called to customize
+   * the slideshow.
+   * @param {object} [info] the object used to populate the about.
+   * @example
+   * info = {
+   *   version: 1.0,
+   *   email: 'johnDoe@slideshows.org',
+   *   github: 'https://github.com/superJohnDoe'
+   * };
+   */
+  setAboutInfo: function (info) {
+    // use default if nothing is provided
+    if (!info) info = App.info;
+
     if(!info.email) about.authorEmail.hide()
     if(!info.gitHub) about.authorGitHub.hide()
-    
+
     about.appVersion.text(info.version)
     about.authorEmail.attr('href', ('mailto:'+ info.email))
     about.authorGitHub.attr('href', info.gitHub)
@@ -387,34 +546,60 @@ var App = {
 };
 
 /**
- * TODO: rewrite description of this and ALL objects
- * Load, activate and manage the state and behaviour of the slides.
- * Starts calling init() and passing the number of slides as required argument.
- * init will load the slides from specified folder.
- * Contains config {object} for the slideshow
+ * Controller for the slideshow. contains Slides.config, passed down on
+ * initialization of the slideshow by {@link Slides.init}
+ * Secondary API. exposes controls to manage state changes for the slideshow
+ * such as {@link Slides.go} to request a change to a slide.
+ *
+ * @namespace
  */
 var Slides = {
-  /** {element} DOM Element that will contain our slides */
+  /**
+   * DOM Element that will contain our slides
+   * @type {element}
+   */
   container: $slideContainer,
 
-  /** {object} configuration for the application. contains default properties */
+  /**
+   * Configuration for the application. contains default properties that will
+   * be overwritten when initializing a new slideshow.
+   * @type {Object}
+   */
   config: {
-    /** folder that contains the slides */
+    /**
+     * Name of the folder that contains the slides
+     * @memberof Slides.config
+     * @type {String}
+     */
     folder: 'slides',
 
-    /** hash string for the browser address. will get the current slide # after */
+    /**
+     * Hash string for the browser address and the <tt>id attribute</tt> for the
+     * slides containers. Will be setup with the number of the slide after
+     * @memberof Slides.config
+     * @type {String}
+     * @example
+     * Slides.config.hash = 'slide' // for slide 1 will turn in
+     * <div id="slide1"... />
+     */
     hash: 'slide',
 
-    /** default animations for slide transition */
+    /**
+     * Default animations for slide's <tt>semantic-ui transition module</tt>
+     * @memberof Slides.config
+     * @type {Object}
+     * @property {String} left - used when going left
+     * @propertt {String} right - used when going right
+     */
     transition: {
       left: 'fade left',
       right: 'fade right',
     },
 
-    /** @type {String} used when creating the slides to override semantic-ui */
+    /** {String} used when creating the slides to override semantic-ui */
     defaultSlideStyle: 'display: -webkit-flex!important; display: flex!important',
 
-    /** @type {bool} if true try to get the custom .js file for the slideshow */
+    /** {bool} if true try to get the custom .js file for the slideshow */
     getEvents: false,
 
     /** start with button toggled on or off */
@@ -422,7 +607,10 @@ var Slides = {
   },
 
   /**
-   * initialize the slideshow
+   * initialize the slideshow, enabling event listeners, emptying the DOM element
+   * that will contain the slideshow, loading content and activating other basic
+   * event listeners.
+   * @private
    */
   init: function () {
     /** INITIALIZATION */
@@ -433,7 +621,7 @@ var Slides = {
 
     /** reset app initialization to false if needed */
     App.state.initialized === true ? App.setState({ initialized: false }) : null;
-    
+
     /** empty the slide container */
     Slides.container.empty();
 
@@ -448,10 +636,20 @@ var Slides = {
     Slides.updateHash();
   },
 
+  /**
+   * Add custom jQuery event listener for the Slides module
+   * @private
+   */
   addEventListeners: function () {
     $(Slides).on('slides:request-transition', Slides.evaluateTransition)
   },
 
+  /**
+   * Uses jQuery to create the DOM element(s) that will contain the slides
+   * @param  {Number} idx - the index of the slide, starting from 1
+   * @return {node}       - DOM element {<div>} that contains the slide
+   * @private
+   */
   _createSlide: function (idx)  {
     var hash = Slides.config.hash;
 
@@ -464,6 +662,11 @@ var Slides = {
     })[0]
   },
 
+ /**
+  * fetch content from folder specified in {@link Slides.config} until files are
+  * found, then proceed with the activation calling other functions
+  * @private
+  */
   getContent: function () {
     if (App.config.verbose) console.log('fetching slides')
     // local config
@@ -492,8 +695,8 @@ var Slides = {
     // fetch function for ajax request with $.get()
     function ajaxCall () {
       if (loadStatus !== 'OK') return;
-      
-      var nextSlide = folder + '/' + slidesQty + '.html'; 
+
+      var nextSlide = folder + '/' + slidesQty + '.html';
       bit = Slides._createSlide(slidesQty)
 
       $.get(nextSlide)
@@ -504,10 +707,10 @@ var Slides = {
         if (error) throw new Error(error);
 
         /**
-         * Since fail means that there are no more slides to load, 
+         * Since fail means that there are no more slides to load,
          * append everything into the dom and continue configuring the slideshow
          */
-        
+
         /** save slide quantity in App.state */
         App.setState({ totalSlides: slidesQty })
 
@@ -532,20 +735,20 @@ var Slides = {
     ajaxCall()
   },
 
-  /** render and animate the slides, updating values if necessary */
+  /**
+   * Calls {@link Slides.animate} with a small delay to be sure to have
+   * everything updated before attempting the DOM update.
+   */
   render: function () {
     /** execute the animation for the slides */
     setTimeout(Slides.animate, 10)
   },
 
-  /////////////////////
-  // EVENT HANDLERS ///
-  /////////////////////
-
   /**
    * evaluate transition if moving to {direction} and store into App.state
-   * @param {string} direction the direction to move. 
+   * @param {string} direction the direction to move.
    *                 one of 'next', 'prev', 'first', 'last'
+   * @private
    */
   evaluateTransition: function (e, data) {
     /** local variables */
@@ -602,7 +805,7 @@ var Slides = {
 
   /**
    * high level API. tries to move the slides in a direction
-   * @param  {string|number} nextSlide one of 'next', 'prev', 'first', 'last' 
+   * @param  {string|number} nextSlide one of 'next', 'prev', 'first', 'last'
    *                                   can also be a number to JUMP directly
    *                                   to a slide passing a number.
    */
@@ -610,7 +813,17 @@ var Slides = {
     $(Slides).trigger('slides:request-transition', [nextSlide])
   },
 
-  onEnter: function (slide) {
+  /**
+   * Hook for onEnter event of the given slide number. Automatically rertrieves
+   * events to hook to from {@Slides.config}.events that are passed on by the
+   * <tt>user-defined config object for the slideshow</tt> (see readme) and is
+   * called by <tt>semantic-ui transition</tt> module when entering a slide.
+   * If callback exists and is a function then is called, otherwise is not.
+   *
+   * @param  {Number} slide the number of the slide to handle
+   * @private
+   */
+  _onEnter: function (slide) {
     var events        = Slides.config.events,
         slidesEvents  = {};
 
@@ -620,11 +833,16 @@ var Slides = {
     var fn = slidesEvents.onEnter
     // end the function if event is not present
     if (!fn || typeof fn !== 'function') return
-    
+
     fn()
   },
 
-  onLeave: function (slide) {
+  /**
+   * Similar to {@Slides.onEnter} but for the onLeave event.
+   * @param  {Number} slide - The index of the slide to handle
+   * @private
+   */
+  _onLeave: function (slide) {
     var events        = Slides.config.events,
         slidesEvents  = {};
 
@@ -632,21 +850,25 @@ var Slides = {
 
     if (!slidesEvents) return;
     var fn = slidesEvents.onLeave
-    
+
     // end the function if event is not present
     if (!fn || typeof fn !== 'function') return
-    
+
     fn()
   },
 
   /**
-   *  handler for the animation to move the slides
+   *  Handles the animation of the slideshow, using <tt>semantic-ui transition module</tt>
+   *  Uses {@link App.state} and {@Slides.configto retrieve the information on how to
+   *  animate which slides. Is called as final callback of the chain started with
+   *  {@link Slides.go} directly from {@link App.setState}
+   *
+   * @private
    */
-  animate: function (/*nextSlide*/) {
+  animate: function () {
     var prevSlide   = App.state.currentSlide,
         nextSlide   = App.state.nextSlide,
         slides      = Slides.container.children(),
-        value       = Slides.translateAmount,
         hash        = Slides.config.hash;
         prev        = '',
         next        = '',
@@ -655,10 +877,9 @@ var Slides = {
           leave: ''
         };
 
-    /** 
+    /**
      * Get the dom elements corresponding the slides to animate. also works as
      * validator for the passed values
-     * @type {[type]}
      */
     if (typeof prevSlide === 'number') prev = $('#'+ hash + prevSlide);
     if (typeof nextSlide === 'number') next = $('#'+ hash + nextSlide);
@@ -686,14 +907,14 @@ var Slides = {
         /** disable transition controls to avoid mess */
         Interface.disableTransitions()
         /** call the onLeave method for current slide */
-        Slides.onLeave(prevSlide)
+        Slides._onLeave(prevSlide)
       }
     })
     next.transition({
       animation: transition.enter,
       onStart: function () {
         /** activate onEnter for nextSlide slide */
-        Slides.onEnter(nextSlide)
+        Slides._onEnter(nextSlide)
       },
       // handle the event listeners
       onComplete: function () {
@@ -716,7 +937,9 @@ var Slides = {
   },
 
   /**
-   *  update the address on the browser
+   *  update the address on the browser using {@link App.state} data
+   *
+   * @private
    */
   updateHash: function () {
     var hash  = Slides.config.hash,
@@ -727,35 +950,75 @@ var Slides = {
   }
 };
 
+/**
+ * Handles the counter for the slide and the slide jumper behaviour
+ * @namespace
+ */
 var Counter = {
+  /**
+   * Initialize the counter component and its functionalities.
+   * calls {@link Counter.set} to set initial state
+   *
+   * @private
+   */
   init: function () {
     /** set counter initial state */
     Counter.set()
   },
 
-  /** set the value of the label if present */
+  /**
+   * Set the value of the slides counter label to the value stored inside
+   * {@link App.state}.currentSlide.
+   * Gets invoked automatically during in {@link Counter.init) when finalizing
+   * the loading of the slideshow and every time there is a change in the state
+   * regarding the slides position, by {@link SLides.animate}.
+   *
+   * @private
+   */
   set: function () {
     var current = App.state.currentSlide,
         total   = App.state.totalSlides,
-        /** @type {string}  label text */
+        /** {string}  label text */
         text    = current + ' of ' + total,
-        /** @type {node} DOM element for the label text */
+        /** {node} DOM element for the label text */
         $label  = $counter.find('.labelText');
 
     /** update the label value */
     $($label[0]).text(text)
     $jumperInput.val(current)
   },
+
+  /**
+  * Toggle the counter on and off from the UI. Invoked when toggling the whole UI
+  */
+  // @TODO: move the handling of the transition from here to App.state, checking
+  // the transition state with semantic-ui transition methods.
+  // See how the dimmer handles it's transition in _changeState()
   toggle: function () { $counter.transition('fly up') }
 }
 
+/**
+ * handles the page dimmer created in index.html.
+ * @namespace
+ */
 var Dimmer = {
   states: ['show', 'hide'],
-  
-  /** triggers */
+
+  /**
+   * Forces a state onto the Dimmer component showing or hiding it
+   * @param {Bool} status - <tt>true</tt> to show, <tt>false</tt> to hide the dimmer
+   */
   set: function (status) { $(Dimmer).trigger('dimmer:set', [status]) },
+
+  /**
+   * Toggles the current state of the dimmer, using {@link {App.state}.dimmer.
+   */
   toggle: function () { App.setState({ dimmer: !App.state.dimmer }) },
-  /** add event listeners */
+
+  /**
+   * Initialize the Dimmer, adding jQuery event listeners
+   * @private
+   */
   init: function () {
     $(Dimmer).on('dimmer:set', { status: status }, Dimmer._changeState)
   },
@@ -764,11 +1027,12 @@ var Dimmer = {
    * change the state of the dimmer, showing or hiding it
    * @param  {object} e       event from $.trigger()
    * @param  {bool}   request true show, false hide
+   *
+   * @private
    */
   _changeState: function (e, request) {
-    /** @type {string} 'show' or 'hide' depending on true|false */
+    /** {string} 'show' or 'hide' depending on true|false */
     var state = request === true ? Dimmer.states[0] : Dimmer.states[1]
-
     $dimmer.dimmer(state)
   },
 
@@ -776,10 +1040,15 @@ var Dimmer = {
 
 /**
  * Handles the events for the control buttons rendered on screen
+ * @namespace
  */
 var Interface = {
   /**
-   * initialize the buttons with their events called from Slides.
+   * Initialize parts of the UI and related event listeners.
+   * Initialize the Dimmer with {@link Dimmer.init} and enables
+   * <tt>semantic-ui modules</tt>
+   *
+   * @private
    */
   init: function () {
     if (App.config.verbose) console.log('initializing interface')
@@ -794,7 +1063,11 @@ var Interface = {
     Interface.addEventListeners()
   },
 
-  /** Activate slideshow UI semantic-ui modules */
+  /**
+   * Activate <tt>semantic-ui modules</tt> for UI components
+   *
+   * @private
+   */
   enableSemanticModules: function () {
     /** help popup from [?] button */
     $helpIcon.popup({
@@ -822,14 +1095,13 @@ var Interface = {
     })
   },
 
-  /** basic event listeners for the UI */
+  /**
+   * Add event event listeners to UI components and {@link Interface} module.
+   * events range from <tt>onClick</tt> to custom <tt>jQuery triggers</tt>
+   *
+   * @private
+   */
   addEventListeners: function () {
-
-    /** call is done in more than one event. shortening */
-    function toggleDimmer () {
-      App.setState({ dimmer: !App.state.dimmer })
-    };
-
     /** custom events */
     $(Interface).on('interface:toggle', Interface.onToggleUI);
     $(Interface).on('interface:update-btns', Interface.onToggleButtons);
@@ -853,8 +1125,14 @@ var Interface = {
     })
 
   },
- 
-  /** add functionality to the navigational buttons */
+
+  /**
+   * Add event listeners to the navigational buttons.
+   * These listeners are separated from other UI components since they are
+   * enabled and disabled conditionally.
+   *
+   * @private
+   */
   addNavigationListeners: function () {
     $button.first.on('click', function () {
       Slides.go('first')
@@ -870,7 +1148,20 @@ var Interface = {
     });
   },
 
-  /** validate a keyCode from a keypress to handle navigation */
+  /**
+   * Validate an e.keyCode, checking what key is pressed and returning a string
+   * equal to the event that needs to be triggered
+   *
+   * @param  {Number} key - keyCode to evaluate
+   * @return {String}       empty string if validation failed, else one of the
+   *                        actions that needs to be triggered
+   *
+   * @example
+   * // returns 'toggle'
+   * Interface.validateKeyPress(84)
+   *
+   * @private
+   */
   validateKeyPress: function (key) {
     /**
      * keycode shortcuts * legend
@@ -879,7 +1170,7 @@ var Interface = {
      * left:      <- key, presenter left
      * home:      HOME key
      * end:       END key
-     * toggle:    T key 
+     * toggle:    T key
      * blackout:  "." (mark) key, presenter black screen
      */
     if (key === 39 || key === 34 || key === 32) return 'right';
@@ -892,7 +1183,13 @@ var Interface = {
     return ''
   },
 
-  /** handle a keypress in the page, when listeners are active */
+  /**
+   * Callback for {@link Interface.addKeyPressEvents} to validate a keypress with
+   * {@link Interface.validateKeyPress} and triggering actions based on the result
+   * @param  {event} e  $.keypress event
+   *
+   * @private
+   */
   handleKeyPress: function(e) {
     var key     = Interface.validateKeyPress(e.keyCode),
         onFirst = App.state.currentSlide === 1,
@@ -926,7 +1223,7 @@ var Interface = {
 
       case 'toggle':
         e.preventDefault();
-        Interface.toggle();
+        Interface.toggleUI();
         break
 
       case 'dim':
@@ -940,39 +1237,64 @@ var Interface = {
     }
   },
 
-  /** instantiate event listeners on key press */
+  /**
+   * Add a <tt>$.keydown</tt> event listener to <tt>document</tt> and calling
+   * {@Interface.handleKeyPress} in responseText
+   * @private
+   */
   addKeyPressEvents: function () {
     $(document).keydown(Interface.handleKeyPress);
   },
 
-  /** disables the transition event listeners */
+  /**
+   * Remove event listeners from transition controls, preventing the user to
+   * change slide using default application controls (both UI and HIDs)
+   */
   disableTransitions: function () {
     $(document).unbind('keydown', Interface.handleKeyPress)
-    
+
     $button.first.off('click');
     $button.prev.off('click');
     $button.next.off('click');
     $button.last.off('click');
   },
 
-  /** add or restore the transition event listeners */
+  /**
+   * Revert the removal from {@link Interface.disableTransition} and reset the
+   * removed event listeners, allowing the user to navigate the slides
+   */
   restoreTransitions: function () {
     Interface.addKeyPressEvents()
     Interface.addNavigationListeners()
   },
 
-  /** event triggers */
-
+  /**
+   * Trigger to update the UI buttons. change classes and rerender the buttons.
+   * Called on finalization of the slideshow init and on every successful render,
+   * updating the UI to the current app state.
+   * @private
+   */
   updateButtons: function () { $(Interface).trigger('interface:update-btns') },
-  toggleUI: function () { $(Interface).trigger('interface:toggle') },
-
-  toggle: function () { App.setState({buttonShown: !App.state.buttonShown }) },
-
-  /** event handlers */
 
   /**
-   * toggle classes from buttons
-   */ 
+   * Trigger to toggle the UI from visible to hidden
+   */
+  toggleUI: function () { $(Interface).trigger('interface:toggle') },
+
+  /**
+   * Update {@link App.state}.buttonShown to trigger the update of the Interface
+   * visibility
+   *
+   * @private
+   */
+  toggle: function () { App.setState({buttonShown: !App.state.buttonShown }) },
+
+  /**
+   * Update the navigational button classes, assigning or removing the class
+   * <tt>disabled</tt> if the action is not available.
+   *
+   * @private
+   */
   onToggleButtons: function () {
     var currentSlide = App.state.currentSlide,
         lastSlide    = App.state.totalSlides,
@@ -1000,11 +1322,11 @@ var Interface = {
       };
       return
     };
-    
+
     /**
      * check current slideshow status and toggle disable class from buttons
      * if and where needed.
-     */ 
+     */
     if (currentSlide === 1) {
       $button.first.addClass('disabled');
       $button.prev.addClass('disabled');
@@ -1021,9 +1343,14 @@ var Interface = {
       $button.last.removeClass('disabled');
     };
   },
-  /**
-   * Toggle the buttons (and count)
-   */
+
+ /**
+  * programmatically switch from visible to hidden for all the UI component,
+  * allowing the user to show or hide navigation buttons, counter and other
+  * elements of the UI
+  *
+  * @private
+  */
   onToggleUI: function () {
     var state = App.state.buttonShown;
 
@@ -1039,21 +1366,18 @@ var Interface = {
  * After here you can find temporary unused functions and methods that are
  * not deleted because they will be useful in future updates and functionalities
  * but are not used currently from the app.
+ * @namespace
  */
-
 var STORAGE = {
-
-  /** utility methods */
-
   /**
    * Can validate a @prop {string} <status> using an array of values
-   * TODO: Move somewhere. can be used to validate transition selection
+   * @TODO: Move somewhere. can be used to validate transition selection
    *       & customization, using an array of valid strings.
    *
    * Validate the dimmer transitions. true or an error if validation is falsy
    * @param  {string} status     desired new status to validate. optional
    * @param  {array}  array      Array of valid values to check with
-   * @return {bool/error}        true if valid, undefined if not
+   * @return {bool|Error}        true if valid, undefined if not
    *                             will throw an error if not valid
    */
   validate: function (status, validationArray) {
@@ -1067,7 +1391,7 @@ var STORAGE = {
         isValid       = (function () {
           var valid = false
           for (var i = 0; i < states.length; i++) {
-            if (status === states[i]) valid = true; 
+            if (status === states[i]) valid = true;
           }
           return valid
         })();
