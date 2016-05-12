@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>app/config.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="App.html">App</a><ul class='methods'><li data-type='method'><a href="App.html#.didUpdate">didUpdate</a></li><li data-type='method'><a href="App.html#.getOldState">getOldState</a></li><li data-type='method'><a href="App.html#.loadSlideshow">loadSlideshow</a></li><li data-type='method'><a href="App.html#.setAboutInfo">setAboutInfo</a></li><li data-type='method'><a href="App.html#.setState">setState</a></li></ul></li><li><a href="Counter.html">Counter</a><ul class='methods'><li data-type='method'><a href="Counter.html#.toggle">toggle</a></li></ul></li><li><a href="Dimmer.html">Dimmer</a><ul class='methods'><li data-type='method'><a href="Dimmer.html#.set">set</a></li><li data-type='method'><a href="Dimmer.html#.toggle">toggle</a></li></ul></li><li><a href="Interface.html">Interface</a><ul class='methods'><li data-type='method'><a href="Interface.html#.disableTransitions">disableTransitions</a></li><li data-type='method'><a href="Interface.html#.restoreTransitions">restoreTransitions</a></li><li data-type='method'><a href="Interface.html#.toggleUI">toggleUI</a></li></ul></li><li><a href="Slides.html">Slides</a><ul class='methods'><li data-type='method'><a href="Slides.html#.go">go</a></li><li data-type='method'><a href="Slides.html#.render">render</a></li></ul></li><li><a href="STORAGE.html">STORAGE</a><ul class='methods'><li data-type='method'><a href="STORAGE.html#.validate">validate</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#$authorAccordion">$authorAccordion</a></li><li><a href="global.html#$button">$button</a></li><li><a href="global.html#$counter">$counter</a></li><li><a href="global.html#$counterLabel">$counterLabel</a></li><li><a href="global.html#$dimmer">$dimmer</a></li><li><a href="global.html#$helpIcon">$helpIcon</a></li><li><a href="global.html#$jumperInput">$jumperInput</a></li><li><a href="global.html#$slideContainer">$slideContainer</a></li><li><a href="global.html#$slidesHelpPopup">$slidesHelpPopup</a></li><li><a href="global.html#_slideLoader">_slideLoader</a></li><li><a href="global.html#about">about</a></li><li><a href="global.html#APP_CONFIG_DEF">APP_CONFIG_DEF</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">app/config.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file
+ *
+ * This file provides global variables containing jQuery selected DOM elements
+ * for the UI components. this allow to have them globally declared and usable
+ * from the app and from user custom scripts for slideshows.
+ */
+
+/** button that toggles the help/about popup */
+$helpIcon         = $('[data-role="helpIcon"]');
+/** help/about popup container */
+$slidesHelpPopup  = $('[data-role="helpPopup"]');
+/** about section of the popup */
+$authorAccordion  = $('[data-role="authorAccordion"]');
+/** main container for the whole slide counter/jumper elements */
+$counter          = $('[data-role="counter"]');
+/** wrapper element that will contain the slides */
+$slideContainer   = $('[data-role="slides"]');
+/** page dimmer */
+$dimmer           = $('[data-role="dimmer"]');
+
+/**
+ * Contains all the UI buttons references. Can contain extra elements added from
+ * {@link ./app.js}
+ * @type {Object}
+ */
+$button           = {};
+/** wrapper for ALL the control buttons (movement, dimmer etc...) */
+$button.wrapper   = $('[data-role="buttons"]');
+/** go first slide button */
+$button.first     = $('[data-role="btnFirst"]');
+/** go previous slide button */
+$button.prev      = $('[data-role="btnPrev"]');
+/** dimmer toggle button */
+$button.black     = $('[data-role="blackScreen"]');
+/** go next slide button */
+$button.next      = $('[data-role="btnNext"]');
+/** go last slide button */
+$button.last      = $('[data-role="btnLast"]');
+
+/** button used to toggle the UI */
+$button.toggle    = $('[data-role="toggle"]')
+
+/**
+ * selector for the label part of the counter (&lt;strong>NOT&lt;/strong> the label
+ * itself, that you can find using $.find('.labelText')
+ */
+$counterLabel     = $('[data-role="jumpToSlide"]')
+
+/** input element for the &lt;em>jump to slide&lt;/em> functionality */
+$jumperInput      = $('[data-role="jumperInput"]')
+/** button to confirm a jump to a slide */
+$button.jump      = $('[data-role="jumperBtn"]')
+
+/**
+ * containers for the about section of the popup
+ * @type {Object}
+ */
+about             = {};
+/** space for the author email */
+about.authorEmail = $('[data-role="authorEmail"]');
+/** space for the github link of the author */
+about.authorGitHub= $('[data-role="authorGitHub"]');
+/** app version label */
+about.appVersion  = $('[data-role="appVersion"]');
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri May 13 2016 01:40:48 GMT+0200 (ora legale Europa occidentale) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

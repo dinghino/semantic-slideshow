@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>state - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="App.html">App</a><ul class='methods'><li data-type='method'><a href="App.html#.didUpdate">didUpdate</a></li><li data-type='method'><a href="App.html#.getOldState">getOldState</a></li><li data-type='method'><a href="App.html#.loadSlideshow">loadSlideshow</a></li><li data-type='method'><a href="App.html#.setAboutInfo">setAboutInfo</a></li><li data-type='method'><a href="App.html#.setState">setState</a></li></ul></li><li><a href="App.state.html">state</a></li><li><a href="Counter.html">Counter</a><ul class='methods'><li data-type='method'><a href="Counter.html#.toggle">toggle</a></li></ul></li><li><a href="Dimmer.html">Dimmer</a><ul class='methods'><li data-type='method'><a href="Dimmer.html#.set">set</a></li><li data-type='method'><a href="Dimmer.html#.toggle">toggle</a></li></ul></li><li><a href="Interface.html">Interface</a><ul class='methods'><li data-type='method'><a href="Interface.html#.disableTransitions">disableTransitions</a></li><li data-type='method'><a href="Interface.html#.restoreTransitions">restoreTransitions</a></li><li data-type='method'><a href="Interface.html#.toggleUI">toggleUI</a></li></ul></li><li><a href="Slides.html">Slides</a><ul class='methods'><li data-type='method'><a href="Slides.html#.go">go</a></li><li data-type='method'><a href="Slides.html#.render">render</a></li></ul></li><li><a href="STORAGE.html">STORAGE</a><ul class='methods'><li data-type='method'><a href="STORAGE.html#.validate">validate</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#$authorAccordion">$authorAccordion</a></li><li><a href="global.html#$button">$button</a></li><li><a href="global.html#$counter">$counter</a></li><li><a href="global.html#$counterLabel">$counterLabel</a></li><li><a href="global.html#$dimmer">$dimmer</a></li><li><a href="global.html#$helpIcon">$helpIcon</a></li><li><a href="global.html#$jumperInput">$jumperInput</a></li><li><a href="global.html#$slideContainer">$slideContainer</a></li><li><a href="global.html#$slidesHelpPopup">$slidesHelpPopup</a></li><li><a href="global.html#_slideLoader">_slideLoader</a></li><li><a href="global.html#about">about</a></li><li><a href="global.html#APP_CONFIG_DEF">APP_CONFIG_DEF</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">state</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="App.html">App</a>.</span>
+        
+        state
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Current state of the app. should be handled <strong>ONLY</strong> with .setState()</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line76">line 76</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".buttonShown"><span class="type-signature">(static) </span>buttonShown<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    <tt>true</tt> if UI is toggled
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line81">line 81</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".currentSlide"><span class="type-signature">(static) </span>currentSlide<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    currently shown slideshow
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line106">line 106</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".dimmer"><span class="type-signature">(static) </span>dimmer<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    <tt>true</tt> if active
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line96">line 96</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".events"><span class="type-signature">(static) </span>events<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    <tt>true</tt> if custom events are present and initialized
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line91">line 91</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".initialized"><span class="type-signature">(static) </span>initialized<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    reset app initialization to false if needed
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line593">line 593</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".initialized"><span class="type-signature">(static) </span>initialized<span class="type-signature"> :Boolean</span></h4>
+
+
+
+
+<div class="description">
+    <tt>true</tt> if app is initialized. internally managed
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Boolean</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line86">line 86</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".nextSlide"><span class="type-signature">(static) </span>nextSlide<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    Next slide to show. Usually set with <a href="Slides.html#.go">Slides.go</a> and used in transitions
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line116">line 116</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".prevSlide"><span class="type-signature">(static) </span>prevSlide<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    previous slide shown. Used and set in transitions
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line111">line 111</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".totalSlides"><span class="type-signature">(static) </span>totalSlides<span class="type-signature"> :Number</span></h4>
+
+
+
+
+<div class="description">
+    Total number of slides in the current slideshow
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Number</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line101">line 101</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri May 13 2016 01:11:34 GMT+0200 (ora legale Europa occidentale) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

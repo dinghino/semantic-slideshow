@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>App - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="App.html">App</a><ul class='methods'><li data-type='method'><a href="App.html#.didUpdate">didUpdate</a></li><li data-type='method'><a href="App.html#.getOldState">getOldState</a></li><li data-type='method'><a href="App.html#.loadSlideshow">loadSlideshow</a></li><li data-type='method'><a href="App.html#.setAboutInfo">setAboutInfo</a></li><li data-type='method'><a href="App.html#.setState">setState</a></li></ul></li><li><a href="Counter.html">Counter</a><ul class='methods'><li data-type='method'><a href="Counter.html#.toggle">toggle</a></li></ul></li><li><a href="Dimmer.html">Dimmer</a><ul class='methods'><li data-type='method'><a href="Dimmer.html#.set">set</a></li><li data-type='method'><a href="Dimmer.html#.toggle">toggle</a></li></ul></li><li><a href="Interface.html">Interface</a><ul class='methods'><li data-type='method'><a href="Interface.html#.disableTransitions">disableTransitions</a></li><li data-type='method'><a href="Interface.html#.restoreTransitions">restoreTransitions</a></li><li data-type='method'><a href="Interface.html#.toggleUI">toggleUI</a></li></ul></li><li><a href="Slides.html">Slides</a><ul class='methods'><li data-type='method'><a href="Slides.html#.go">go</a></li><li data-type='method'><a href="Slides.html#.render">render</a></li></ul></li><li><a href="STORAGE.html">STORAGE</a><ul class='methods'><li data-type='method'><a href="STORAGE.html#.validate">validate</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#$authorAccordion">$authorAccordion</a></li><li><a href="global.html#$button">$button</a></li><li><a href="global.html#$counter">$counter</a></li><li><a href="global.html#$counterLabel">$counterLabel</a></li><li><a href="global.html#$dimmer">$dimmer</a></li><li><a href="global.html#$helpIcon">$helpIcon</a></li><li><a href="global.html#$jumperInput">$jumperInput</a></li><li><a href="global.html#$slideContainer">$slideContainer</a></li><li><a href="global.html#$slidesHelpPopup">$slidesHelpPopup</a></li><li><a href="global.html#_slideLoader">_slideLoader</a></li><li><a href="global.html#about">about</a></li><li><a href="global.html#APP_CONFIG_DEF">APP_CONFIG_DEF</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">App</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+        App
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Main application object. Handles events, initialization and general state ofthe app.This is the primary interface for the user to handle changes in the applicationusing App.setState() method.</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>0.9.4</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Daniele Calcinai</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line36">line 36</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".config"><span class="type-signature">(static) </span>config<span class="type-signature"> :Object</span></h4>
+
+
+
+
+<div class="description">
+    Default global config for the app that can be overridden while calling<a href="App.init.html">App.init</a>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line65">line 65</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".state"><span class="type-signature">(static) </span>state<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Current state of the app. should be handled <strong>ONLY</strong> with .setState()
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line80">line 80</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".didUpdate"><span class="type-signature">(static) </span>didUpdate<span class="signature">(prevState)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Similar to react's componentDidUpdate, is called after the app updatedits state and the old state is set to into the history
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>prevState</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">App.state before the update</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line270">line 270</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".getOldState"><span class="type-signature">(static) </span>getOldState<span class="signature">(idx)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    retrieve a state object from the history (_prevStates) or the whole arrayif no argument is specified
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>idx</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">optional. range from 0 to App._maxStateHistory</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line179">line 179</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".loadSlideshow"><span class="type-signature">(static) </span>loadSlideshow<span class="signature">(config)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Triggers the loading of a slideshow, using the passed config object toset it up
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>config</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The configuration file for the slideshow                        is compiled from the UI form and dispatched                        when the slideshow has been validated.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line367">line 367</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".setAboutInfo"><span class="type-signature">(static) </span>setAboutInfo<span class="signature">(info<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Update the about section of the application using the information storedinside App.info or a custom info object. can be called to customizethe slideshow.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>info</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">the object used to populate the about.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line534">line 534</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>info = {  version: 1.0,  email: 'johnDoe@slideshows.org',  github: 'https://github.com/superJohnDoe'};</code></pre>
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id=".setState"><span class="type-signature">(static) </span>setState<span class="signature">(nextState)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    Primary API for the application. changes the internal state object.Has different callbacks for default and user definable actions based onstate changes
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>nextState</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">requested changes in the application</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_app.js.html">js/app.js</a>, <a href="js_app.js.html#line129">line 129</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Fri May 13 2016 01:40:48 GMT+0200 (ora legale Europa occidentale) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
