@@ -18,6 +18,7 @@ var APP_CONFIG_DEF = {
 /**
  * callback for the success of load 'config.html'
  * will activate the submit button, allowing the loading of slideshows
+ * @private
  */
 function _slideLoader () {
   $slides_loader.on('click', function (e) {
@@ -64,6 +65,7 @@ function _slideLoader () {
 
 /**
  * load all the ui components, configs and app file
+ * @private
  */
 function _loadApp () {
   // fetch the UI and load it into the page

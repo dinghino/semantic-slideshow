@@ -131,17 +131,39 @@ var App = {
     nextSlide: undefined,
 
     timer: {
-      /** @type {Number} Interval for the timer to update */
+      /**
+       * Interval for the timer to update
+       * @type {Number}
+       */
       interval: 1000,
-      /** @type {Number} holds the start time of the slideshow */
+      /**
+       * Holds the start time of the slideshow
+       * @type {Number}
+       */
       start: 0,
-      /** @type {Number} holds the last time the timer has been paused */
+      /**
+       * Holds the last time the timer has been paused
+       * @type {Number}
+       */
       pausedAt: 0,
-      /** @type {Number} holds the last time the timer started */
+      /**
+       * Holds the last time the timer started
+       * @type {Number}
+       */
       resumeAt: 0,
-      /** @type {String} current timer state */
+      /**
+       * Current timer state. Also triggers calls on {@link Timer} methods
+       * @type {Boolean}
+       */
       state: false,
-      /** @type {Array} contains duration of the pauses done */
+      /**
+       * Contains informations on all the pauses of the slideshow. Each pause
+       * is an object.
+       * @type {Array}
+       * @property {Number} start - start time of the pause
+       * @property {Number} end   - end time of the pause
+       * @property {Number} duration - duration of the pause in ms
+       */
       pauses: []
     }
   },
@@ -602,12 +624,12 @@ var App = {
     // use default if nothing is provided
     if (!info) info = App.info;
 
-    if(!info.email) about.authorEmail.hide()
-    if(!info.gitHub) about.authorGitHub.hide()
+    if(!info.email) $about.authorEmail.hide()
+    if(!info.gitHub) $about.authorGitHub.hide()
 
-    about.appVersion.text(info.version)
-    about.authorEmail.attr('href', ('mailto:'+ info.email))
-    about.authorGitHub.attr('href', info.gitHub)
+    $about.appVersion.text(info.version)
+    $about.authorEmail.attr('href', ('mailto:'+ info.email))
+    $about.authorGitHub.attr('href', info.gitHub)
   },
 };
 
@@ -1431,10 +1453,6 @@ var Dimmer = {
   },
 };
 
-/**
- * Handles an elapsed time timer that can show the time from the start of the
- * slideshow.
- */
 /** TODO: 
  * * render something on screen
  * * Add UI controls to start/pause
@@ -1443,11 +1461,26 @@ var Dimmer = {
  *       time of the presentation (pauses included)
  * * Search state pattern timer example and use that
  */
+
+/**
+ * Handles an elapsed time timer that can show the time from the start of the
+ * slideshow.
+ * @namespace
+ */
 var Timer = {
-  /** @type {Array} available timer states and event handlers */
+  /**
+   * Available timer states and event handlers
+   * @type {Array}
+   */
   states: [ 'stop', 'run', 'pause', 'ready'],
 
-  /** initialize the timer and start it */
+  /** 
+   * Initialize the timer and start it. Method is called automatically if the
+   * correspondend <tt>toggle</tt> in the config screen is set on true or if the
+   * Something tries to start the timer with {@link Timer.run} before initializing
+   * @param  {Number} i milliseconds for the interval update. is used to render
+   *                    the Timer on screen or in console
+   */
   init: function (i) {
     if (!i || i < 1000) var i = 1000
 
@@ -1474,7 +1507,11 @@ var Timer = {
    */
   stop: function () { App.setState({ timer: { state: 'stop' } }) },
 
-  /** start the interval for counting. resume timer and save resumeAt */
+  /**
+   * Start the interval for counting. resume timer and save resumeAt. Called when
+   * set the state to 'run' into App.state.timer
+   * @private
+   */
   _run: function () {
     var timer     = App.state.timer,
         interval  = timer.interval,
@@ -1493,7 +1530,6 @@ var Timer = {
 
       /**
        * compile the new pause object and push it into the array
-       * @type {[type]}
        */
       newPauses.push({
         end: now,
@@ -1517,7 +1553,11 @@ var Timer = {
     App.__slideshowElapsedTime__ = setInterval(Timer.render, interval, interval)
   },
 
-  /** pause the slideshow, clearing the interval and saving pausedAt */
+  /**
+   * Pause the slideshow, clearing the interval and saving pausedAt. Called when
+   * the state into App.state.timer is set to 'pause'
+   * @private
+   */
   _pause: function () {
     Timer._clearInterval()
     var timer = App.state.timer;
@@ -1530,7 +1570,11 @@ var Timer = {
     App.setState({ timer: newState });
   },
 
-  /** stop the counter and evaluate totals */
+  /**
+   * Stop the counter and evaluate totals. Called when the state in App.state.timer
+   * ise set to 'stop'
+   * @private
+   */
   _stop: function () {
     Timer._clearInterval()
     var now = new Date().getTime(),
@@ -1543,7 +1587,12 @@ var Timer = {
     App.setState({ timer: newState })
   },
 
-  /** calculate the elapsed time */
+  /**
+   * Calculate the elapsed time
+   * @return {Number} elapsed time from the {@link Timer.init}, cutting out the
+   *                  pauses if they are present
+   * @private
+   */
   _getTime: function () {
     var state = App.state.timer;
 
@@ -1559,7 +1608,11 @@ var Timer = {
     return elapsedTime
   },
 
-  /** format the calculated value to a more readable format */
+  /**
+   * Format the calculated value to a more readable format
+   * @return {String} Contains XXmXXs. value is retrieved from {@link Timer._getTime}
+   * @private
+   */
   _formatTime: function () {
     // total elapsed time in seconds
     var total  =  parseInt(Math.floor(Timer._getTime() / 1000).toFixed(0)),
@@ -1573,12 +1626,18 @@ var Timer = {
     return { string: string, total: total, mins: mins, secs: secs }
   },
 
-  /** clear the interval, pausing the counter.*/
+  /**
+   * Clear the interval, pausing the counter.
+   * @private
+   */
   _clearInterval: function () {
     clearInterval(App.__slideshowElapsedTime__)
   },
 
-  /** render the timer somewhere */
+  /**
+   * Render the timer somewhere. For now is rendered in the console as
+   * <tt>console.info</tt>
+   */
   render: function () { console.info('elapsed time:', Timer._formatTime().string) },
 };
 

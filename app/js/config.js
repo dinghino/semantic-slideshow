@@ -56,10 +56,10 @@ $button.jump      = $('[data-role="jumperBtn"]')
  * containers for the about section of the popup
  * @type {Object}
  */
-about             = {};
+$about             = {};
 /** space for the author email */
-about.authorEmail = $('[data-role="authorEmail"]');
+$about.authorEmail = $('[data-role="authorEmail"]');
 /** space for the github link of the author */
-about.authorGitHub= $('[data-role="authorGitHub"]');
+$about.authorGitHub= $('[data-role="authorGitHub"]');
 /** app version label */
-about.appVersion  = $('[data-role="appVersion"]');
+$about.appVersion  = $('[data-role="appVersion"]');
