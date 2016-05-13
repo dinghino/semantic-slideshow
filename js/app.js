@@ -279,7 +279,7 @@ var App = {
     if(d.initialized && Slides.config.showButtons) Interface.toggle()
 
     /** activate the dimmer if state changed */
-    if (d.dimmer) Dimmer.set(nS.dimmer);
+    if (d.dimmer) Dimmer._changeState(nS.dimmer);
 
     /** Toggle the ui if requested */
     if (d.showUI) Interface.toggleUI();
@@ -295,10 +295,9 @@ var App = {
     if (d.nextSlide && nS.nextSlide) Slides.render();
 
     /**
-     * if nexSlide changed and is falsy means a transition has been executed
-     * and stuff in the UI needs to be updated
+     * Update the UI if the currently shown slide has changed
      */
-    if (d.nextSlide && !nS.nextSlide) {
+    if (d.currentSlide) {
       Counter.set();
       Interface.updateButtons();
       Slides.updateHash();
@@ -306,21 +305,16 @@ var App = {
 
     // TIMER HANDLING
     if (d.timer && pS.timer.state !== nS.timer.state) {
-      var timerState, timerHandler;
+      var timerHandler = Timer['_' + nS.timer.state],
+          isFunction   = typeof timerHandler === 'function';
 
-      timerState = $.grep(Timer.states, function (state, i) {
-        return state.name === nS.timer.state
-      })
-      if (timerState[0]) timerHandler = timerState[0]['handler']
-      // console.log(timerState, timerHandler, Timer[timerHandler])
-      if (timerHandler) {
-        Timer[timerHandler]()
-      } else {
-        console.error('No handler was found for "%s" state of the timer',
+      if (isFunction) {
+        timerHandler()
+      } else if (!isFunction && nS.timer.state !== 'ready') {
+        console.error('Couldn\'t find an handler for Timer "%s" state',
           nS.timer.state)
-      };
+      }
     }
-
   },
 
   /**
@@ -545,13 +539,12 @@ var App = {
     // set initial state for the buttons.
     // if necessary do stuff to the UI
     Counter.init();
+    if (Slides.config.useTimer) Timer.init();
 
     // remove the dimmer
     setTimeout(function () {
-      App.setState({
-        dimmer: false,
-        initialized: true
-      })
+      App.setState({ initialized: true })
+      App.startSlideshow()
     }, 600)
 
     // call the onEnter event for the first slide after loading
@@ -574,8 +567,24 @@ var App = {
   },
 
   /**
-   * utility methods
+   * Start the slideshow, closing the dimmer and starting/resuming the timer
    */
+  startSlideshow: function () {
+    App.setState({
+      dimmer: false,
+      timer: Slides.config.useTimer ? { state: 'run' } : undefined
+    })
+  },
+
+  /**
+   * pause the slideshow, showing the dimmer and pausing the timer
+   */
+  pauseSlideshow: function () {
+    App.setState({
+      dimmer: true,
+      timer: Slides.config.useTimer ? { state: 'pause' } : undefined
+    })
+  },
 
   /**
    * Update the about section of the application using the information stored
@@ -674,7 +683,7 @@ var Slides = {
 
     /** toggle the dimmer to 'show', hiding content loading */
     App.setState({ dimmer: true })
-    Slides.addEventListeners()
+    // Slides.addEventListeners()
 
     /** reset app initialization to false if needed */
     App.state.initialized === true ? App.setState({ initialized: false }) : null;
@@ -697,9 +706,9 @@ var Slides = {
    * Add custom jQuery event listener for the Slides module
    * @private
    */
-  addEventListeners: function () {
-    $(Slides).on('slides:request-transition', Slides.evaluateTransition)
-  },
+  // addEventListeners: function () {
+  //   $(Slides).on('slides:request-transition', Slides.evaluateTransition)
+  // },
 
   /**
    * Uses jQuery to create the DOM element(s) that will contain the slides
@@ -807,7 +816,7 @@ var Slides = {
    *                 one of 'next', 'prev', 'first', 'last'
    * @private
    */
-  evaluateTransition: function (e, data) {
+  evaluateTransition: function (data) {
     /** local variables */
     var currentSlide = App.state.currentSlide,
         lastSlide    = App.state.totalSlides,
@@ -856,7 +865,7 @@ var Slides = {
         break
 
       default:
-        throw new Error('Error while moving... what did you do? You nasty...')
+        console.error('Error while moving "%s"... what did you do? You nasty...', request)
     }
   },
 
@@ -867,7 +876,8 @@ var Slides = {
    *                                   to a slide passing a number.
    */
   go: function (nextSlide) {
-    $(Slides).trigger('slides:request-transition', [nextSlide])
+    // $(Slides).trigger('slides:request-transition', [nextSlide])
+    Slides.evaluateTransition(nextSlide)
   },
 
   /**
@@ -983,7 +993,7 @@ var Slides = {
     App.setState({
       currentSlide: nextSlide,
       prevSlide: prevSlide,
-      nextSlide: undefined
+      nextSlide: null
     })
   },
 
@@ -1235,9 +1245,7 @@ var Interface = {
 
       case 'dim':
         e.preventDefault()
-        App.setState({
-          dimmer: !App.state.dimmer
-        })
+        Dimmer.toggle()
 
       default:
         break
@@ -1374,22 +1382,39 @@ var Dimmer = {
   states: ['show', 'hide'],
 
   /**
-   * Forces a state onto the Dimmer component showing or hiding it
-   * @param {Bool} status - <tt>true</tt> to show, <tt>false</tt> to hide the dimmer
+   * Initialize the Dimmer, adding jQuery event listeners
+   * @private
    */
-  set: function (status) { $(Dimmer).trigger('dimmer:set', [status]) },
+  init: function () {/** no initialization needed for now */ },
 
   /**
    * Toggles the current state of the dimmer, using {@link {App.state}.dimmer.
    */
-  toggle: function () { App.setState({ dimmer: !App.state.dimmer }) },
+  toggle: function () {
+    var nextState = !App.state.dimmer,
+        useTimer = Slides.config.useTimer;
+
+    App.setState({
+      dimmer: nextState,
+      timer: useTimer ? { state: nextState ? 'pause' : 'run' } : undefined
+    })
+  },
 
   /**
-   * Initialize the Dimmer, adding jQuery event listeners
-   * @private
+   * Force a state into the dimmer, showing or hiding it
+   * @param {Bool} status - <tt>true</tt> to show, <tt>false</tt> to hide the dimmer
    */
-  init: function () {
-    $(Dimmer).on('dimmer:set', { status: status }, Dimmer._changeState)
+  set: function (status) {
+    if (typeof status !== 'boolean') {
+      throw new Error('Invalid status for Dimmer.set!. Should be <Boolean>')
+    }
+
+    var useTimer = Slides.config.useTimer;
+
+    App.setState({
+      dimmer: status,
+      timer: useTimer ? { state: status ? 'pause' : 'run' } : undefined
+    })
   },
 
   /**
@@ -1399,7 +1424,7 @@ var Dimmer = {
    *
    * @private
    */
-  _changeState: function (e, request) {
+  _changeState: function (request) {
     /** {string} 'show' or 'hide' depending on true|false */
     var state = request === true ? Dimmer.states[0] : Dimmer.states[1]
     $dimmer.dimmer(state)
@@ -1410,112 +1435,103 @@ var Dimmer = {
  * Handles an elapsed time timer that can show the time from the start of the
  * slideshow.
  */
-// TODO: render something on screen
-// TODO: Add UI controls to start/pause
-// TODO: store paused time into an array (or find another way to evaluate all the pauses)
-//       this can allow to know how long you paused, how many pauses you did, get the total
-//       time of the presentation (pauses included)
-// TODO: Search state pattern timer example and use that
+/** TODO: 
+ * * render something on screen
+ * * Add UI controls to start/pause
+ * * store paused time into an array (or find another way to evaluate all the pauses)
+ *       this can allow to know how long you paused, how many pauses you did, get the total
+ *       time of the presentation (pauses included)
+ * * Search state pattern timer example and use that
+ */
 var Timer = {
   /** @type {Array} available timer states and event handlers */
-  states: [
-    { name: 'stopped', handler: 'onStop'},
-    { name: 'running', handler: 'onStart'},
-    { name: 'paused', handler: 'onPause'}
-  ],
+  states: [ 'stop', 'run', 'pause', 'ready'],
 
   /** initialize the timer and start it */
   init: function (i) {
-    // setup events
-    Timer.events()
-    
     if (!i || i < 1000) var i = 1000
 
     var initState = {
       interval: i,
-      state: 'ready',
-      start: new Date().getTime()
+      state: Timer.states[3],
+      start: new Date().getTime(),
+      initialized: true
     };
 
     App.setState({ timer: initState });
-
-    Timer.start()
   },
 
-  events: function () {
-    $(Timer).on('timer:start', Timer.onStart);
-    $(Timer).on('timer:pause', Timer.onPause);
-    $(Timer).on('timer:stop', Timer.onStop);
-  },
-
-  start: function () { App.setState({ timer: { state: Timer.states[1].name } }) },
-
-  pause: function () { App.setState({ timer: { state: Timer.states[2].name } }) },
-  
-  stop: function () { App.setState({ timer: { state: Timer.states[0].name } }) },
-
-  /** calculate the elapsed time */
-  _getTime: function () {
-    var state = App.state.timer;
-
-    var elapsedTime = new Date().getTime() - state.start;
-
-    if (state.pausedAt) {
-      elapsedTime -= (state.resumeAt - state.pausedAt)
-    }
-    return elapsedTime
-  },
-
-  /** format the calculated value to a more readable format */
-  _formatTime: function () { return Math.floor(Timer._getTime() / 1000).toFixed(0) },
+  /** 
+   * Run the timer
+   */
+  run: function () { App.setState({ timer: { state: 'run' } }) },
+  /**
+   * Pause the timer
+   */
+  pause: function () { App.setState({ timer: { state: 'pause' } }) },
+  /**
+   * Stop the timer completeley
+   */
+  stop: function () { App.setState({ timer: { state: 'stop' } }) },
 
   /** start the interval for counting. resume timer and save resumeAt */
-  onStart: function () {
+  _run: function () {
     var timer     = App.state.timer,
         interval  = timer.interval,
         newState  = {},
         now       = new Date().getTime(),
-        pauses    = timer.pauses
+        pauses    = timer.pauses;
 
-    if (!timer.state) {
-      console.warn('Timer not initialized. initializing!')
-      Timer.init()
+    if (!timer.initialized) {
+      console.warn('Timer not initalized yet. Initializing...')
+      Timer.init();
       return
     }
 
-    // create the newState object properties based on the current state
-    if (timer.state === 'paused') {
-      pauses.push({start: now, end: timer.state.pausedAt})
-      newState = {
-        resumeAt: now,
-        pauses: pauses
-      };
-    };
+    if (timer.pausedAt) {
+      var newPauses = pauses
 
-    App.setState({ timer: newState });
+      /**
+       * compile the new pause object and push it into the array
+       * @type {[type]}
+       */
+      newPauses.push({
+        end: now,
+        start: timer.pausedAt,
+        duration: now - timer.pausedAt
+      })
+
+      /**
+       * New state object for the timer
+       * @type {Object}
+       */
+      newState = {
+        pausedAt: undefined,
+        resumeAt: now,
+        pauses: newPauses
+      };
+
+      App.setState({ timer: newState });
+    };
 
     App.__slideshowElapsedTime__ = setInterval(Timer.render, interval, interval)
   },
+
   /** pause the slideshow, clearing the interval and saving pausedAt */
-  onPause: function () {
+  _pause: function () {
+    Timer._clearInterval()
     var timer = App.state.timer;
 
-    // if timer is not running there is no need to pause it
-    if (timer.state !== 'running') {
-      console.log('timer is not running. doing nothing!');
-      return
-    };
-
     // reset the start time
-    var timer = {
+    var newState = {
       pausedAt: new Date().getTime(),
     };
 
-    App.setState({ timer: timer });
-    Timer._clearInterval()
+    App.setState({ timer: newState });
   },
+
   /** stop the counter and evaluate totals */
-  onStop: function () {
+  _stop: function () {
     Timer._clearInterval()
     var now = new Date().getTime(),
         pauses = App.state.timer.pauses
@@ -1527,17 +1543,43 @@ var Timer = {
     App.setState({ timer: newState })
   },
 
+  /** calculate the elapsed time */
+  _getTime: function () {
+    var state = App.state.timer;
+
+    var elapsedTime = new Date().getTime() - state.start;
+
+    if (state.pauses.length > 0) {
+      pauseTime = 0;
+      state.pauses.forEach(function (pause, i) {
+        pauseTime += pause.duration
+      });
+      elapsedTime -= pauseTime;
+    }
+    return elapsedTime
+  },
+
+  /** format the calculated value to a more readable format */
+  _formatTime: function () {
+    // total elapsed time in seconds
+    var total  =  parseInt(Math.floor(Timer._getTime() / 1000).toFixed(0)),
+    // total elapsed minutes, floored and rounded w/o decimals
+        mins   = parseInt(Math.floor(total / 60).toFixed(0)),
+    // seconds elapsed from the last minute change (max to 60)
+        secs   = mins < 0 ? total : (total - (mins * 60)),
+    // string to render
+        string = mins + 'm' + secs + 's';
+
+    return { string: string, total: total, mins: mins, secs: secs }
+  },
+
   /** clear the interval, pausing the counter.*/
   _clearInterval: function () {
-    console.log('stopping the timer')
-
     clearInterval(App.__slideshowElapsedTime__)
   },
 
   /** render the timer somewhere */
-  render: function (i) {
-    console.info('elapsed time, logged every %dms:', i, Timer._formatTime() + 's')
-  },
+  render: function () { console.info('elapsed time:', Timer._formatTime().string) },
 };
 
 /**

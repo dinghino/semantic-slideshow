@@ -26,14 +26,16 @@ function _slideLoader () {
     var folder      = $('input[name="folderName"]').val(),
         hash        = $('input[name="pageHash"]').val(),
         controls    = $('input[name="controlsToggle"]').is(':checked'),
-        loadScript  = $('input[name="loadCustomScript"]').is(':checked');
+        loadScript  = $('input[name="loadCustomScript"]').is(':checked'),
+        useTimer    = $('input[name="useTimerToggle"]').is(':checked');
 
     // set the config object to load the slides
     var config = {
       getEvents: loadScript,
       folder: folder,
       hash: hash,
-      showButtons: controls
+      showButtons: controls,
+      useTimer: useTimer
     };
 
     /** calback functions for App.validateSlideshowFolder */
@@ -62,7 +64,6 @@ function _slideLoader () {
 
 /**
  * load all the ui components, configs and app file
- * @return {[type]} [description]
  */
 function _loadApp () {
   // fetch the UI and load it into the page
