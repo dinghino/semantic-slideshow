@@ -69,9 +69,9 @@ function _loadApp () {
   // fetch the UI and load it into the page
   $('[data-role="slidesInterface"]').load("app/ui.html", function () {
     // fetch the config file
-    $.getScript('app/config.js', function () {
+    $.getScript('app/js/config.js', function () {
       // fetch app.js
-      $.getScript('js/app.js', function () {
+      $.getScript('app/js/app.js', function () {
 
       // initialize the app
       setTimeout(App.init, 5, APP_CONFIG_DEF);
