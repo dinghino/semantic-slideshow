@@ -1143,7 +1143,7 @@ var Interface = {
   addEventListeners: function () {
     /** custom events */
     $(Interface).on('interface:toggle', Interface.onToggleUI);
-    $(Interface).on('interface:update-btns', Interface.onToggleButtons);
+    $(Interface).on('interface:update-btns', Interface.onUpdateButtons);
 
     /** click events for slides buttons */
     Interface.addNavigationListeners();
@@ -1337,7 +1337,7 @@ var Interface = {
    *
    * @private
    */
-  onToggleButtons: function () {
+  onUpdateButtons: function () {
     var currentSlide = App.state.currentSlide,
         lastSlide    = App.state.totalSlides,
         allButtons   = $button.wrapper.children(),
@@ -1347,7 +1347,7 @@ var Interface = {
       * should be true after the next if statement is executed.
       * prevents useless checking if there is just one slide to show
       * and buttons are already disabled.
-      * could be deprecated since there is no way onToggleButtons() is called
+      * could be deprecated since there is no way onUpdateButtons() is called
       * if there is just one slide to show
      */
     if (lastSlide === 1 && allDisabled) return;
@@ -1482,8 +1482,13 @@ var Timer = {
    *                    the Timer on screen or in console
    */
   init: function (i) {
-    if (!i || i < 1000) var i = 1000
+    var currentState = App.state.timer.initialized;
 
+    if (currentState === true) {
+      throw new Error('Timer already initialized. Cannot do it again now')
+    }
+
+    if (!i || i < 1000) var i = 1000
     var initState = {
       interval: i,
       state: Timer.states[3],
@@ -1577,12 +1582,18 @@ var Timer = {
    */
   _stop: function () {
     Timer._clearInterval()
-    var now = new Date().getTime(),
-        pauses = App.state.timer.pauses
+    var now       = new Date().getTime(),
+        timer     = App.state.timer,
+        pauses    = timer.pauses,
+        totalTime = now - timer.start,
+        realTime  = Timer._getTime()
 
     var newState = {
       pausedAt: 0,
       resumeAt: 0,
+      totalTime: totalTime,
+      realTime: realTime,
+      pauses: pauses.length
     }
     App.setState({ timer: newState })
   },
@@ -1594,15 +1605,15 @@ var Timer = {
    * @private
    */
   _getTime: function () {
-    var state = App.state.timer;
+    var timer  = App.state.timer,
+        pauses = timer.pauses,
+        now    = new Date().getTime();
 
-    var elapsedTime = new Date().getTime() - state.start;
+    var elapsedTime = now - timer.start;
 
-    if (state.pauses.length > 0) {
+    if (pauses.length > 0) {
       pauseTime = 0;
-      state.pauses.forEach(function (pause, i) {
-        pauseTime += pause.duration
-      });
+      pauses.forEach(function (pause, i) { pauseTime += pause.duration });
       elapsedTime -= pauseTime;
     }
     return elapsedTime
