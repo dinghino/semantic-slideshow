@@ -251,16 +251,27 @@ var App = {
         d       = diff;
 
     /** activate the dimmer if state changed */
-    if (d.dimmer) Dimmer.set(nS.dimmer)
+    if (d.dimmer) Dimmer.set(nS.dimmer);
 
     /**
      * if nextSlide changed and is present in nextSlide, render the slides.
      * evaluation of the next slide number is already done. after animating state
      * will get the new current (should be old next), new prev and undefined next
      */
-    if (d.nextSlide && nS.nextSlide) Slides.render()
-
-    if (d.showUI) Interface.toggleUI() // @TODO: give it a proper method in Interface
+    if (d.nextSlide && nS.nextSlide) Slides.render();
+    /**
+     * if nexSlide changed and is falsy means a transition has been executed
+     * and stuff in the UI needs to be updated
+     */
+    if (d.nextSlide && !nS.nextSlide) {
+      Counter.set();
+      Interface.updateButtons();
+      Slides.updateHash();
+    }
+    /**
+     * Toggle the ui if requested
+     */
+    if (d.showUI) Interface.toggleUI()
   },
 
   /**
@@ -928,12 +939,6 @@ var Slides = {
       prevSlide: prevSlide,
       nextSlide: undefined
     })
-
-
-    /** call update UI with the new state */
-    Counter.set()
-    Interface.updateButtons()
-    Slides.updateHash()
   },
 
   /**
@@ -991,9 +996,6 @@ var Counter = {
   /**
   * Toggle the counter on and off from the UI. Invoked when toggling the whole UI
   */
-  // @TODO: move the handling of the transition from here to App.state, checking
-  // the transition state with semantic-ui transition methods.
-  // See how the dimmer handles it's transition in _changeState()
   toggle: function () { $counter.transition('fly up') }
 }
 
@@ -1352,8 +1354,6 @@ var Interface = {
    * @private
    */
   onToggleUI: function () {
-    var state = App.state.showUI;
-
     $button.wrapper.transition('fly left');
     Counter.toggle();
   }
