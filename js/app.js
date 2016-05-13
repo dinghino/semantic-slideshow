@@ -284,6 +284,9 @@ var App = {
     /** Toggle the ui if requested */
     if (d.showUI) Interface.toggleUI();
     if (d.showCounter) Counter.toggle();
+
+    // SLIDES HANDLING
+
     /**
      * if nextSlide changed and is present in nextSlide, render the slides.
      * evaluation of the next slide number is already done. after animating state
@@ -300,6 +303,24 @@ var App = {
       Interface.updateButtons();
       Slides.updateHash();
     };
+
+    // TIMER HANDLING
+    if (d.timer && pS.timer.state !== nS.timer.state) {
+      var timerState, timerHandler;
+
+      timerState = $.grep(Timer.states, function (state, i) {
+        return state.name === nS.timer.state
+      })
+      if (timerState[0]) timerHandler = timerState[0]['handler']
+      // console.log(timerState, timerHandler, Timer[timerHandler])
+      if (timerHandler) {
+        Timer[timerHandler]()
+      } else {
+        console.error('No handler was found for "%s" state of the timer',
+          nS.timer.state)
+      };
+    }
+
   },
 
   /**
@@ -491,7 +512,7 @@ var App = {
    * Internal event handlers that are used to perfom some basic actions like
    * updating the {@link App} config and/or trigger other events to chain them
    * in a proper workflow
-   * @TODO: create comments for each one of these so it's easier to know what they
+   * TODO: create comments for each one of these so it's easier to know what they
    * do. make them if seems the right thing to do.
    * @private
    */
@@ -1396,25 +1417,42 @@ var Dimmer = {
 //       time of the presentation (pauses included)
 // TODO: Search state pattern timer example and use that
 var Timer = {
-  /** @type {Array} available timer states */
-  states: ['stopped', 'running', 'paused'],
+  /** @type {Array} available timer states and event handlers */
+  states: [
+    { name: 'stopped', handler: 'onStop'},
+    { name: 'running', handler: 'onStart'},
+    { name: 'paused', handler: 'onPause'}
+  ],
 
   /** initialize the timer and start it */
   init: function (i) {
+    // setup events
+    Timer.events()
+    
     if (!i || i < 1000) var i = 1000
 
     var initState = {
       interval: i,
-      // TODO: remove the start when implementing and set it in start
-      start: new Date().getTime(),
-      // set the timer as stopped
-      state: Timer.states[0]
+      state: 'ready',
+      start: new Date().getTime()
     };
 
     App.setState({ timer: initState });
 
-    Timer.start(i)
+    Timer.start()
   },
+
+  events: function () {
+    $(Timer).on('timer:start', Timer.onStart);
+    $(Timer).on('timer:pause', Timer.onPause);
+    $(Timer).on('timer:stop', Timer.onStop);
+  },
+
+  start: function () { App.setState({ timer: { state: Timer.states[1].name } }) },
+
+  pause: function () { App.setState({ timer: { state: Timer.states[2].name } }) },
+  
+  stop: function () { App.setState({ timer: { state: Timer.states[0].name } }) },
 
   /** calculate the elapsed time */
   _getTime: function () {
@@ -1432,7 +1470,7 @@ var Timer = {
   _formatTime: function () { return Math.floor(Timer._getTime() / 1000).toFixed(0) },
 
   /** start the interval for counting. resume timer and save resumeAt */
-  start: function () {
+  onStart: function () {
     var timer     = App.state.timer,
         interval  = timer.interval,
         newState  = {},
@@ -1445,16 +1483,11 @@ var Timer = {
       return
     }
 
-    console.log(pauses, typeof pauses)
-
     // create the newState object properties based on the current state
-    if (timer.state === 'stopped') {
-      newState = { state: Timer.states[1] };
-    } else {
+    if (timer.state === 'paused') {
       pauses.push({start: now, end: timer.state.pausedAt})
       newState = {
         resumeAt: now,
-        state: Timer.states[1],
         pauses: pauses
       };
     };
@@ -1464,7 +1497,7 @@ var Timer = {
     App.__slideshowElapsedTime__ = setInterval(Timer.render, interval, interval)
   },
   /** pause the slideshow, clearing the interval and saving pausedAt */
-  pause: function () {
+  onPause: function () {
     var timer = App.state.timer;
 
     // if timer is not running there is no need to pause it
@@ -1476,15 +1509,22 @@ var Timer = {
     // reset the start time
     var timer = {
       pausedAt: new Date().getTime(),
-      state: Timer.states[2]
     };
 
     App.setState({ timer: timer });
     Timer._clearInterval()
   },
   /** stop the counter and evaluate totals */
-  stop: function () {
-    // TODO: clear interval, set state 'stopped', evaluate totals
+  onStop: function () {
+    Timer._clearInterval()
+    var now = new Date().getTime(),
+        pauses = App.state.timer.pauses
+
+    var newState = {
+      pausedAt: 0,
+      resumeAt: 0,
+    }
+    App.setState({ timer: newState })
   },
 
   /** clear the interval, pausing the counter.*/
@@ -1511,7 +1551,7 @@ var Timer = {
 var STORAGE = {
   /**
    * Can validate a @prop {string} <status> using an array of values
-   * @TODO: Move somewhere. can be used to validate transition selection
+   * TODO: Move somewhere. can be used to validate transition selection
    *       & customization, using an array of valid strings.
    *
    * Validate the dimmer transitions. true or an error if validation is falsy
