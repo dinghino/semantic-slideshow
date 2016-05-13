@@ -22,6 +22,12 @@
 
 
 var I = 0
+/**
+ * Logged when App.init runs, used for debugging purposes.
+ * Can be used to create a elapsed timer for the app to be attached somewhere
+ * and counting
+ * @type {Date}
+ */
 var INIT_TIME
 
 /**
@@ -85,6 +91,10 @@ var App = {
      */
     showUI: false,
     /**
+     * <tt>true if the counter needs to be shown</tt>
+     */
+    showCounter: false,
+    /**
      * <tt>true</tt> if app is initialized. internally managed
      * @type {Boolean}
      */
@@ -118,7 +128,11 @@ var App = {
      * Next slide to show. Usually set with {@link Slides.go} and used in transitions
      * @type {Number}
      */
-    nextSlide: undefined
+    nextSlide: undefined,
+    /** @type {Number} holds the start time of the slideshow */
+    startTime: 0,
+    /** @type {Number} holds the elapsed time when Timer is paused */
+    pauseTime: 0,
   },
 
   /**
@@ -245,20 +259,27 @@ var App = {
    */
   onStateChange: function (prevState, nextState, diff) {
     /** {array} property changed */
-    var changed = Object.keys(diff),
+    var d       = diff,
+        changed = Object.keys(d),
         pS      = prevState,
-        nS      = nextState,
-        d       = diff;
+        nS      = nextState;
+
+    /** toggle the UI on state initialization */
+    if(d.initialized && Slides.config.showButtons) Interface.toggle()
 
     /** activate the dimmer if state changed */
     if (d.dimmer) Dimmer.set(nS.dimmer);
 
+    /** Toggle the ui if requested */
+    if (d.showUI) Interface.toggleUI();
+    if (d.showCounter) Counter.toggle();
     /**
      * if nextSlide changed and is present in nextSlide, render the slides.
      * evaluation of the next slide number is already done. after animating state
      * will get the new current (should be old next), new prev and undefined next
      */
     if (d.nextSlide && nS.nextSlide) Slides.render();
+
     /**
      * if nexSlide changed and is falsy means a transition has been executed
      * and stuff in the UI needs to be updated
@@ -267,11 +288,7 @@ var App = {
       Counter.set();
       Interface.updateButtons();
       Slides.updateHash();
-    }
-    /**
-     * Toggle the ui if requested
-     */
-    if (d.showUI) Interface.toggleUI()
+    };
   },
 
   /**
@@ -496,9 +513,6 @@ var App = {
     // set initial state for the buttons.
     // if necessary do stuff to the UI
     Counter.init();
-    if (Slides.config.showButtons && !App.state.initialized) {
-      setTimeout(Interface.toggle, 150);
-    };
 
     // remove the dimmer
     setTimeout(function () {
@@ -994,51 +1008,10 @@ var Counter = {
   },
 
   /**
-  * Toggle the counter on and off from the UI. Invoked when toggling the whole UI
-  */
+   * call semantic-ui transition to show or hide the Counter
+   */
   toggle: function () { $counter.transition('fly up') }
 }
-
-/**
- * handles the page dimmer created in index.html.
- * @namespace
- */
-var Dimmer = {
-  states: ['show', 'hide'],
-
-  /**
-   * Forces a state onto the Dimmer component showing or hiding it
-   * @param {Bool} status - <tt>true</tt> to show, <tt>false</tt> to hide the dimmer
-   */
-  set: function (status) { $(Dimmer).trigger('dimmer:set', [status]) },
-
-  /**
-   * Toggles the current state of the dimmer, using {@link {App.state}.dimmer.
-   */
-  toggle: function () { App.setState({ dimmer: !App.state.dimmer }) },
-
-  /**
-   * Initialize the Dimmer, adding jQuery event listeners
-   * @private
-   */
-  init: function () {
-    $(Dimmer).on('dimmer:set', { status: status }, Dimmer._changeState)
-  },
-
-  /**
-   * change the state of the dimmer, showing or hiding it
-   * @param  {object} e       event from $.trigger()
-   * @param  {bool}   request true show, false hide
-   *
-   * @private
-   */
-  _changeState: function (e, request) {
-    /** {string} 'show' or 'hide' depending on true|false */
-    var state = request === true ? Dimmer.states[0] : Dimmer.states[1]
-    $dimmer.dimmer(state)
-  },
-
-};
 
 /**
  * Handles the events for the control buttons rendered on screen
@@ -1225,7 +1198,7 @@ var Interface = {
 
       case 'toggle':
         e.preventDefault();
-        Interface.toggleUI();
+        Interface.toggle();
         break
 
       case 'dim':
@@ -1289,7 +1262,12 @@ var Interface = {
    *
    * @private
    */
-  toggle: function () { App.setState({showUI: !App.state.showUI }) },
+  toggle: function () {
+    App.setState({
+      showUI: !App.state.showUI,
+      showCounter: !App.state.showCounter
+    })
+  },
 
   /**
    * Update the navigational button classes, assigning or removing the class
@@ -1353,10 +1331,47 @@ var Interface = {
    *
    * @private
    */
-  onToggleUI: function () {
-    $button.wrapper.transition('fly left');
-    Counter.toggle();
-  }
+  onToggleUI: function () { $button.wrapper.transition('fly left') }
+};
+
+/**
+ * handles the page dimmer created in index.html.
+ * @namespace
+ */
+var Dimmer = {
+  states: ['show', 'hide'],
+
+  /**
+   * Forces a state onto the Dimmer component showing or hiding it
+   * @param {Bool} status - <tt>true</tt> to show, <tt>false</tt> to hide the dimmer
+   */
+  set: function (status) { $(Dimmer).trigger('dimmer:set', [status]) },
+
+  /**
+   * Toggles the current state of the dimmer, using {@link {App.state}.dimmer.
+   */
+  toggle: function () { App.setState({ dimmer: !App.state.dimmer }) },
+
+  /**
+   * Initialize the Dimmer, adding jQuery event listeners
+   * @private
+   */
+  init: function () {
+    $(Dimmer).on('dimmer:set', { status: status }, Dimmer._changeState)
+  },
+
+  /**
+   * change the state of the dimmer, showing or hiding it
+   * @param  {object} e       event from $.trigger()
+   * @param  {bool}   request true show, false hide
+   *
+   * @private
+   */
+  _changeState: function (e, request) {
+    /** {string} 'show' or 'hide' depending on true|false */
+    var state = request === true ? Dimmer.states[0] : Dimmer.states[1]
+    $dimmer.dimmer(state)
+  },
 };
 
 
