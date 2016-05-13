@@ -129,10 +129,15 @@ var App = {
      * @type {Number}
      */
     nextSlide: undefined,
+    
     /** @type {Number} holds the start time of the slideshow */
     startTime: 0,
-    /** @type {Number} holds the elapsed time when Timer is paused */
-    pauseTime: 0,
+    /** @type {Number} holds the last time the timer has been paused */
+    pauseTimeStart: 0,
+    /** @type {Number} holds the last time the timer started */
+    pauseTimeEnd: 0,
+    /** @type {String} current timer state */
+    timerState: 'stopped'
   },
 
   /**
@@ -1374,6 +1379,88 @@ var Dimmer = {
   },
 };
 
+
+/**
+ * Handles an elapsed time timer that can show the time from the start of the
+ * slideshow. 
+ */
+// TODO: render something on screen
+// TODO: Add UI controls to start/pause
+// TODO: store paused time into an array (or find another way to evaluate all the pauses)
+//       this can allow to know how long you paused, how many pauses you did, get the total
+//       time of the presentation (pauses included)
+// TODO: Search state pattern timer example and use that
+var Timer = {
+  /** @type {Array} available timer states */
+  states: ['stopped', 'running', 'paused'],
+
+  /** initialize the timer and start it */
+  init: function (i) {
+    App.setState({
+      // TODO: remove the startTime when implementing and set it in start
+      startTime: new Date().getTime(),
+      timerState: Timer.states[0]
+    });
+    Timer.start(i)
+  },
+
+  /** calculate the elapsed time */
+  _getTime: function () {
+    var state = App.state;
+
+    var elapsedTime = new Date().getTime() - state.startTime;
+
+    if (state.pauseTimeStart) {
+      elapsedTime -= (state.pauseTimeEnd - state.pauseTimeStart)
+    }
+    return elapsedTime
+  },
+
+  /** format the calculated value to a more readable format */
+  elapsed: function () {
+    return Math.floor(Timer._getTime() / 1000).toFixed(0)
+  },
+
+  /** start the interval for counting */
+  start: function (i) {
+    if (!i) var i = 1000
+
+    if (App.state.timerState !== 'running') {
+      App.setState({
+        pauseTimeEnd: new Date().getTime(),
+        timerState: Timer.states[1]
+      })
+    } else {
+    // TODO: use this instead of launching from .init() when implementing
+      App.setState({
+        startTime: new Date().getTime(),
+        timerState: Timer.states[1]
+      })
+    };
+    
+    App.__slideshowElapsedTime__ = setInterval(Timer.render, i, i)
+  },
+  pause: function () {
+    // reset the start time
+    App.setState({
+      pauseTimeStart: new Date().getTime(),
+      timerState: Timer.states[2]
+    });
+    Timer._clearInterval()
+  },
+
+  /** clear the interval, pausing the counter.*/
+  _clearInterval: function () {
+    console.log('stopping the timer')
+
+    clearInterval(App.__slideshowElapsedTime__)
+  },
+
+  /** render the timer somewhere */
+  render: function (i) {
+    console.log('elapsed time, logged every %dms:', i, Timer.elapsed() + 's')
+  },
+};
 
 /**
  * STORAGE SECTION
