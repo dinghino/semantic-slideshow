@@ -83,7 +83,7 @@ var App = {
      * <tt>true</tt> if UI is toggled
      * @type {Boolean}
      */
-    buttonShown: false,
+    showUI: false,
     /**
      * <tt>true</tt> if app is initialized. internally managed
      * @type {Boolean}
@@ -260,7 +260,7 @@ var App = {
      */
     if (d.nextSlide && nS.nextSlide) Slides.render()
 
-    if (d.buttonShown) Interface.toggleUI() // @TODO: give it a proper method in Interface
+    if (d.showUI) Interface.toggleUI() // @TODO: give it a proper method in Interface
   },
 
   /**
@@ -498,7 +498,7 @@ var App = {
     }, 600)
 
     // call the onEnter event for the first slide after loading
-    Slides.onEnter(App.state.currentSlide)
+    Slides._onEnter(App.state.currentSlide)
   },
   _onEnableEvents: function (e) {
     console.log('activating events')
@@ -1282,12 +1282,12 @@ var Interface = {
   toggleUI: function () { $(Interface).trigger('interface:toggle') },
 
   /**
-   * Update {@link App.state}.buttonShown to trigger the update of the Interface
+   * Update {@link App.state}.showUI to trigger the update of the Interface
    * visibility
    *
    * @private
    */
-  toggle: function () { App.setState({buttonShown: !App.state.buttonShown }) },
+  toggle: function () { App.setState({showUI: !App.state.showUI }) },
 
   /**
    * Update the navigational button classes, assigning or removing the class
@@ -1344,15 +1344,15 @@ var Interface = {
     };
   },
 
- /**
-  * programmatically switch from visible to hidden for all the UI component,
-  * allowing the user to show or hide navigation buttons, counter and other
-  * elements of the UI
-  *
-  * @private
-  */
+  /**
+   * programmatically switch from visible to hidden for all the UI component,
+   * allowing the user to show or hide navigation buttons, counter and other
+   * elements of the UI
+   *
+   * @private
+   */
   onToggleUI: function () {
-    var state = App.state.buttonShown;
+    var state = App.state.showUI;
 
     $button.wrapper.transition('fly left');
     Counter.toggle();
