@@ -127,7 +127,7 @@ You can also control the slide using your keyboard or a remote presenter.
 You can always see the controls shortcuts using the `?` button on the bottom left of the UI.
 
 
-#What's next
+# What's next
 
 More events hooks, customization and tuning for sure.
 Option to jump to a slide directly, maybe.
